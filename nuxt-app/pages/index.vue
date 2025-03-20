@@ -22,9 +22,8 @@ async function getHTML(url: string) {
 </script>
 
 <template>
-  <div
-    class="w-screen h-screen flex flex-col justify-center items-center bg-black text-white"
-  >
+  <Navbar />
+  <div class="flex flex-col justify-center items-center text-white">
     <h1 class="text-4xl font-mono mb-10 underline decoration-emerald-600">
       Chef-ferino
     </h1>

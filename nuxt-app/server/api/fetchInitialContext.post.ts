@@ -2,9 +2,9 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
 export default defineEventHandler(async (event) => {
   const { html } = await readBody(event);
-  const { apiKey } = useRuntimeConfig(event);
+  const { API_KEY } = useRuntimeConfig(event);
 
-  const genAI = new GoogleGenerativeAI(apiKey);
+  const genAI = new GoogleGenerativeAI(API_KEY);
 
   const schema = {
     description: "Fetched recipe context from blog post",
