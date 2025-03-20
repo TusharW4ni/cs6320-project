@@ -2,7 +2,7 @@ from google import genai
 from google.genai import types
 import pathlib
 
-client = genai.Client(api_key="AIzaSyDZyvxjOGVyI4afjzMFq3BtdkPjNDJMjkI")
+client = genai.Client(api_key="")
 
 # Use the local file directly
 filepath = pathlib.Path("blog.txt")
