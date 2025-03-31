@@ -23,5 +23,8 @@
     "@nuxtjs/tailwindcss": "^6.13.2",
     "@prisma/nuxt": "^0.3.0",
     "@types/jsonwebtoken": "^9.0.9"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

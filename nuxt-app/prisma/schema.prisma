@@ -8,9 +8,74 @@ datasource db {
 }
 
 model User {
-  id        String  @id @default(cuid())
-  email     String  @unique
+  id        String    @id @default(cuid())
+  email     String    @unique
   firstName String?
   lastName  String?
-  archived  Boolean @default(false)
+  Recipe    Recipe[]
+  archived  Boolean   @default(false)
+  Session   Session[]
+
+  @@map("user")
+}
+
+model Ingredient {
+  id       String  @id @default(cuid())
+  name     String
+  Recipe   Recipe  @relation(fields: [recipeId], references: [id])
+  recipeId String
+  archived Boolean @default(false)
+
+  @@map("ingredient")
+}
+
+model Direction {
+  id       String  @id @default(cuid())
+  step     String
+  Recipe   Recipe  @relation(fields: [recipeId], references: [id])
+  recipeId String
+  archived Boolean @default(false)
+
+  @@map("direction")
+}
+
+model Recipe {
+  id          String       @id @default(cuid())
+  title       String
+  notes       String
+  Ingredients Ingredient[]
+  Directions  Direction[]
+  userId      String
+  User        User         @relation(fields: [userId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  archived    Boolean      @default(false)
+  Session     Session[]
+
+  @@map("recipe")
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  User      User      @relation(fields: [userId], references: [id])
+  recipeId  String
+  Recipe    Recipe    @relation(fields: [recipeId], references: [id])
+  Messages  Message[]
+  createdAt DateTime  @default(now())
+  archived  Boolean   @default(false)
+
+  @@map("session")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  content   String
+  role      String // 'user' | 'assistant'
+  sessionId String
+  Session   Session  @relation(fields: [sessionId], references: [id])
+  archived  Boolean  @default(false)
+
+  @@map("message")
 }

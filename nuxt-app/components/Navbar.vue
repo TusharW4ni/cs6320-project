@@ -26,18 +26,20 @@ watch(
 </script>
 
 <template>
-  <div class="text-white w-screen p-3 flex">
-    <div class="w-1/2">
+  <div class="text-white p-3 flex">
+    <div class="flex items-center w-1/2">
       <button
         v-if="!isHome"
         @click="goto('/')"
-        class="font-mono underline decoration-emerald-600"
+        class="font-mono underline decoration-emerald-600 mx-2"
       >
         <ArrowLeftIcon class="h-6 w-6" />
       </button>
+      <h1 class="font-mono underline decoration-emerald-600">Chef-ferino</h1>
     </div>
     <div class="w-1/2 flex justify-end">
       <button
+        v-if="isHome"
         @click="goto('/settings')"
         class="px-2 py-1 rounded-full"
         @mouseenter="handleHover"
