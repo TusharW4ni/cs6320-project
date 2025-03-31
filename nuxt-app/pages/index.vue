@@ -7,7 +7,17 @@ import {
 } from "@heroicons/vue/24/solid";
 import CookingSessions from "~/components/CookingSessions.vue";
 
-const currentUser = useCookie("currentUser");
+interface CurrentUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  archived: boolean;
+}
+
+const currentUser = useCookie<CurrentUser>("currentUser");
+// console.log({ currentUser: currentUser.value.id });
+const cuId = currentUser.value.id;
 
 const url = ref("");
 const html = ref({});
@@ -15,32 +25,32 @@ const res = ref({});
 const loading = ref(false);
 const divHovered = ref(false);
 
-async function getHTML(url: string) {
-  if (!url) return;
-  try {
-    loading.value = true;
-    html.value = await $fetch(`/api/fetchHtml?url=${url}`);
-    console.log({ html });
-    res.value = await $fetch(`/api/fetchInitialContext`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ html: html.value }),
-    });
-    console.log({ res });
-    loading.value = false;
-  } catch (e) {
-    console.log("error fetching html");
-    loading.value = false;
-  }
-}
+// async function getHTML(url: string) {
+//   if (!url) return;
+//   try {
+//     loading.value = true;
+//     html.value = await $fetch(`/api/fetchHtml?url=${url}`);
+//     console.log({ html });
+//     res.value = await $fetch(`/api/fetchInitialContext`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({ html: html.value }),
+//     });
+//     console.log({ res });
+//     loading.value = false;
+//   } catch (e) {
+//     console.log("error fetching html");
+//     loading.value = false;
+//   }
+// }
 </script>
 
 <template>
   <Navbar />
   <div class="flex h-[calc(100vh-4rem)]">
-    <CookingSessions @id="currentUser.value?.id" />
+    <CookingSessions :id="cuId" />
     <div
       class="overflow-hidden flex justify-center items-center text-white border-2 rounded-lg w-full h-[calc(100vh-4rem)]"
     >
