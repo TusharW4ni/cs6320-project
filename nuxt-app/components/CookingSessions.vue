@@ -15,21 +15,25 @@ type Session = {
 const { data, pending } = await useFetch<Session[]>(`/api/session/get/${id}`);
 const myArray = computed(() => data.value);
 //print each session in myArray
-console.log("myArray", myArray.value.sessions[0].Recipe);
-if (myArray.value) {
-  myArray.value.sessions.forEach((session) => {
-    console.log("session", session);
-    console.log("session recipe", session.Recipe);
-    console.log(
-      `Session ID: ${session.id}, Recipe Title: ${session.Recipe.title}`
-    );
-  });
-}
+// console.log("myArray", myArray.value.sessions[0].Recipe);
+// if (myArray.value) {
+//   myArray.value.sessions.forEach((session) => {
+//     console.log("session", session);
+//     console.log("session recipe", session.Recipe);
+//     console.log(
+//       `Session ID: ${session.id}, Recipe Title: ${session.Recipe.title}`
+//     );
+//   });
+// }
 const sidebarVisible = ref(false);
 
 const toggleSidebar = () => {
   sidebarVisible.value = !sidebarVisible.value;
 };
+
+async function goto(path: string) {
+  await navigateTo(path);
+}
 </script>
 
 <template>
@@ -51,10 +55,11 @@ const toggleSidebar = () => {
         <h2 class="text-2xl font-bold mb-4">Cooking Sessions</h2>
         <p>No sessions yet!</p>
       </div>
-      <div v-else class="p-4">
+      <div v-else class="p-4 w-full">
         <h2 class="text-2xl font-bold mb-4">Cooking Sessions</h2>
         <div v-for="session in myArray.sessions" :key="session.id" class="mb-4">
           <button
+            @click="goto(`/${session.id}`)"
             class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg w-full text-left"
           >
             <p class="font-semibold">{{ session.Recipe.title }}</p>
@@ -65,7 +70,7 @@ const toggleSidebar = () => {
     <button
       v-if="sidebarVisible"
       @click="toggleSidebar"
-      class="border-gray-700 hover:bg-gray-800 hover:border-white h-full rounded-lg hover:border"
+      class="border border-black hover:border hover:bg-gray-800 hover:border-white h-full rounded-lg"
     >
       <ChevronLeftIcon class="w-6 h-6" />
     </button>
