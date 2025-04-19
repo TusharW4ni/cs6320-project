@@ -7,59 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  firstName String?
-  lastName  String?
-  Recipe    Recipe[]
-  archived  Boolean   @default(false)
-  Session   Session[]
-
-  @@map("user")
-}
-
-model Ingredient {
-  id       String  @id @default(cuid())
-  name     String
-  Recipe   Recipe  @relation(fields: [recipeId], references: [id])
-  recipeId String
-  archived Boolean @default(false)
-
-  @@map("ingredient")
-}
-
-model Direction {
-  id       String  @id @default(cuid())
-  step     String
-  Recipe   Recipe  @relation(fields: [recipeId], references: [id])
-  recipeId String
-  archived Boolean @default(false)
-
-  @@map("direction")
-}
-
-model Recipe {
-  id          String       @id @default(cuid())
-  title       String
-  notes       String
-  Ingredients Ingredient[]
-  Directions  Direction[]
-  userId      String
-  User        User         @relation(fields: [userId], references: [id])
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  archived    Boolean      @default(false)
-  Session     Session[]
-
-  @@map("recipe")
-}
-
 model Session {
-  id        String    @id @default(cuid())
-  userId    String
+  id        Int       @id @default(autoincrement())
+  userId    Int
   User      User      @relation(fields: [userId], references: [id])
-  recipeId  String
+  recipeId  Int
   Recipe    Recipe    @relation(fields: [recipeId], references: [id])
   Messages  Message[]
   createdAt DateTime  @default(now())
@@ -68,14 +20,58 @@ model Session {
   @@map("session")
 }
 
+model User {
+  id        Int       @id @default(autoincrement())
+  firstName String?
+  lastName  String?
+  email     String    @unique
+  Sessions  Session[]
+  archived  Boolean   @default(false)
+
+  @@map("user")
+}
+
+model Recipe {
+  id          Int          @id @default(autoincrement())
+  title       String
+  notes       String
+  Ingredients Ingredient[]
+  RecipeSteps RecipeStep[]
+  Session     Session[]
+  createdAt   DateTime     @default(now())
+  archived    Boolean      @default(false)
+
+  @@map("recipe")
+}
+
 model Message {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   timestamp DateTime @default(now())
-  content   String
   role      String // 'user' | 'assistant'
-  sessionId String
+  content   String
+  sessionId Int
   Session   Session  @relation(fields: [sessionId], references: [id])
   archived  Boolean  @default(false)
 
   @@map("message")
+}
+
+model Ingredient {
+  id       Int     @id @default(autoincrement())
+  text     String
+  recipeId Int
+  Recipe   Recipe  @relation(fields: [recipeId], references: [id])
+  archived Boolean @default(false)
+
+  @@map("ingredient")
+}
+
+model RecipeStep {
+  id       Int     @id @default(autoincrement())
+  text     String
+  recipeId Int
+  Recipe   Recipe  @relation(fields: [recipeId], references: [id])
+  archived Boolean @default(false)
+
+  @@map("recipe_step")
 }

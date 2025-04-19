@@ -25,26 +25,26 @@ const res = ref({});
 const loading = ref(false);
 const divHovered = ref(false);
 
-// async function getHTML(url: string) {
-//   if (!url) return;
-//   try {
-//     loading.value = true;
-//     html.value = await $fetch(`/api/fetchHtml?url=${url}`);
-//     console.log({ html });
-//     res.value = await $fetch(`/api/fetchInitialContext`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({ html: html.value }),
-//     });
-//     console.log({ res });
-//     loading.value = false;
-//   } catch (e) {
-//     console.log("error fetching html");
-//     loading.value = false;
-//   }
-// }
+async function getHTML(url: string) {
+  if (!url) return;
+  try {
+    loading.value = true;
+    html.value = await $fetch(`/api/fetchHtml?url=${url}`);
+    console.log({ html });
+    res.value = await $fetch(`/api/fetchInitialContext`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ html: html.value }),
+    });
+    console.log({ res });
+    loading.value = false;
+  } catch (e) {
+    console.log("error fetching html");
+    loading.value = false;
+  }
+}
 </script>
 
 <template>
@@ -59,7 +59,7 @@ const divHovered = ref(false);
         <h2
           class="text-2xl font-mono tracking-widest mb-5 text-center font-bold"
         >
-          <em> Whatcha Cookin? </em>
+          <em> Whatcha Cookin'? </em>
         </h2>
         <form @submit.prevent="getHTML(url)">
           <div class="flex items-center space-x-4">

@@ -17,12 +17,10 @@ const emits = defineEmits<{
 
 let user: any;
 
-// if (props.currentUser) {
 user = ref({
   firstName: props.currentUser?.firstName || "",
   lastName: props.currentUser?.lastName || "",
 });
-// }
 
 onMounted(() => {
   emits("userNameEmpty", props.currentUser?.firstName === null);
@@ -34,7 +32,7 @@ async function onSave() {
     console.log("Please provide your name");
     return;
   }
-  await $fetch("/api/putSettings", {
+  await $fetch("/api/settings/put", {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -64,6 +62,8 @@ async function onSave() {
         class="text-black font-semibold outline-none px-6 py-1 rounded-full border-2 border-white focus:border-emerald-600"
       />
     </div>
-    <button class="bg-green-500 rounded-md w-1/6 m-3 py-1">Save</button>
+    <button class="bg-green-500 hover:bg-green-700 rounded-md w-1/6 m-3 py-1">
+      Save
+    </button>
   </form>
 </template>

@@ -62,7 +62,7 @@ const toggleSidebar = () => {
     <button
       v-if="sidebarVisible"
       @click="toggleSidebar"
-      class="hover:bg-gray-800 h-full rounded-lg hover:border"
+      class="border-gray-700 hover:bg-gray-800 hover:border-white h-full rounded-lg hover:border"
     >
       <ChevronLeftIcon class="w-6 h-6" />
     </button>

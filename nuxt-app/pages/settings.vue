@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { ArrowLeftStartOnRectangleIcon } from "@heroicons/vue/24/solid";
+import {
+  ArrowRightStartOnRectangleIcon,
+  ArrowLeftIcon,
+} from "@heroicons/vue/24/solid";
 
 type User = {
   id: string;
@@ -31,13 +34,23 @@ function handleUserNameEmpty(value: boolean) {
   <Navbar />
   <div class="flex justify-center text-white">
     <div class="w-1/2">
-      <button
-        @click="goto('/api/auth0/logout')"
-        class="flex justify-center items-center rounded-md bg-red-500 py-1 px-2 my-10"
-      >
-        <span><ArrowLeftStartOnRectangleIcon class="w-6 h-6 mx-1" /></span>
-        <span class="mx-1 font-bold">Logout</span>
-      </button>
+      <div class="flex justify-between">
+        <button
+          @click="goto('/')"
+          class="flex justify-center items-center rounded-md bg-gray-700 hover:bg-gray-800 py-1 px-2 my-10"
+        >
+          <ArrowLeftIcon class="w-6 h-6 mx-1" />
+          <span class="mx-1 font-bold">Back</span>
+        </button>
+        <button
+          @click="goto('/api/auth0/logout')"
+          class="flex justify-center items-center rounded-md bg-red-500 hover:bg-red-700 py-1 px-2 my-10"
+        >
+          <span><ArrowRightStartOnRectangleIcon class="w-6 h-6 mx-1" /></span>
+          <span class="mx-1 font-bold">Logout</span>
+        </button>
+      </div>
+
       <h1 class="text-4xl font-mono mb-10 underline decoration-emerald-600">
         Profile
       </h1>
