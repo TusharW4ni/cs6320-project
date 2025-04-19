@@ -9,7 +9,9 @@ export default defineEventHandler(async (event) => {
   // ---- ▼ Comment out these lines to test APIs ▼ ---- //
   const claims = event.context.claims;
   if (!claims) {
+    // if (event.node.req.url !== "/") {
     sendRedirect(event, loginRedirectUrl());
+    // }
   }
   try {
     const { email } = claims;

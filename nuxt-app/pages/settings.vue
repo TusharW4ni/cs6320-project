@@ -36,7 +36,7 @@ function handleUserNameEmpty(value: boolean) {
     <div class="w-1/2">
       <div class="flex justify-between">
         <button
-          @click="goto('/')"
+          @click="goto('/new-session')"
           class="flex justify-center items-center rounded-md bg-gray-700 hover:bg-gray-800 py-1 px-2 my-10"
         >
           <ArrowLeftIcon class="w-6 h-6 mx-1" />

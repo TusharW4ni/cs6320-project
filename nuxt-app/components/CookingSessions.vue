@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ChevronRightIcon, ChevronLeftIcon } from "@heroicons/vue/24/solid";
 const { id } = defineProps<{
-  id: string;
+  id: number;
 }>();
-console.log({ csID: id });
+// console.log({ csID: id });
 
 type Session = {
   id: string;
@@ -15,8 +15,11 @@ type Session = {
 const { data, pending } = await useFetch<Session[]>(`/api/session/get/${id}`);
 const myArray = computed(() => data.value);
 //print each session in myArray
+console.log("myArray", myArray.value.sessions[0].Recipe);
 if (myArray.value) {
-  myArray.value.forEach((session) => {
+  myArray.value.sessions.forEach((session) => {
+    console.log("session", session);
+    console.log("session recipe", session.Recipe);
     console.log(
       `Session ID: ${session.id}, Recipe Title: ${session.Recipe.title}`
     );
@@ -50,7 +53,7 @@ const toggleSidebar = () => {
       </div>
       <div v-else class="p-4">
         <h2 class="text-2xl font-bold mb-4">Cooking Sessions</h2>
-        <div v-for="session in myArray" :key="session.id" class="mb-4">
+        <div v-for="session in myArray.sessions" :key="session.id" class="mb-4">
           <button
             class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg w-full text-left"
           >

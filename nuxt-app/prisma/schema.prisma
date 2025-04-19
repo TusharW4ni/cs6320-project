@@ -33,10 +33,11 @@ model User {
 
 model Recipe {
   id          Int          @id @default(autoincrement())
+  url         String       @unique
   title       String
-  notes       String
   Ingredients Ingredient[]
   RecipeSteps RecipeStep[]
+  notes       String
   Session     Session[]
   createdAt   DateTime     @default(now())
   archived    Boolean      @default(false)

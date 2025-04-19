@@ -1,7 +1,11 @@
 export default defineNuxtConfig({
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  modules: ["@nuxtjs/tailwindcss", "@prisma/nuxt"],
+  modules: [
+    "@nuxtjs/tailwindcss",
+    "@prisma/nuxt",
+    "nuxt-toastify",
+  ],
   css: ["~/app.css"],
   runtimeConfig: {
     API_KEY: "",
