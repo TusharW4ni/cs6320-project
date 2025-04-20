@@ -2,8 +2,8 @@
 const route = useRoute();
 const sessionId = route.params.sessionId;
 
-const { data } = await useFetch(`/api/session/get/${sessionId}`);
-
+const { data } = await useFetch(`/api/session/get/singular/${sessionId}`);
+console.log({ data });
 console.log({ session: data.value.session });
 console.log({ length: data.value?.session.Messages.length });
 </script>

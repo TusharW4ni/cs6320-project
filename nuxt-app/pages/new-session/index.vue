@@ -62,7 +62,7 @@ async function getHTML(url: string) {
 <template>
   <Navbar />
   <div class="flex h-[calc(100vh-4rem)]">
-    <CookingSessions :id="cuId" />
+    <CookingSessions :userId="cuId" />
     <div
       class="overflow-hidden flex justify-center items-center text-white border-2 rounded-lg w-full h-[calc(100vh-4rem)]"
     >

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronRightIcon, ChevronLeftIcon } from "@heroicons/vue/24/solid";
-const { id } = defineProps<{
-  id: number;
+const { userId } = defineProps<{
+  userId: number;
 }>();
 // console.log({ csID: id });
 
@@ -12,19 +12,22 @@ type Session = {
   };
 };
 
-const { data, pending } = await useFetch<Session[]>(`/api/session/get/${id}`);
-const myArray = computed(() => data.value);
-//print each session in myArray
-// console.log("myArray", myArray.value.sessions[0].Recipe);
-// if (myArray.value) {
-//   myArray.value.sessions.forEach((session) => {
-//     console.log("session", session);
-//     console.log("session recipe", session.Recipe);
-//     console.log(
-//       `Session ID: ${session.id}, Recipe Title: ${session.Recipe.title}`
-//     );
-//   });
-// }
+const { data } = await useFetch<Session[]>(
+  `/api/session/get/multiple/${userId}`
+);
+console.log({ dataSessions: data.value });
+// const myArray = computed(() => data.value);
+// //print each session in myArray
+// // console.log("myArray", myArray.value.sessions[0].Recipe);
+// // if (myArray.value) {
+// //   myArray.value.sessions.forEach((session) => {
+// //     console.log("session", session);
+// //     console.log("session recipe", session.Recipe);
+// //     console.log(
+// //       `Session ID: ${session.id}, Recipe Title: ${session.Recipe.title}`
+// //     );
+// //   });
+// // }
 const sidebarVisible = ref(false);
 
 const toggleSidebar = () => {
@@ -51,13 +54,17 @@ async function goto(path: string) {
       <ChevronRightIcon class="w-6 h-6" />
     </button>
     <div v-if="sidebarVisible" class="flex rounded-lg h-full text-white w-full">
-      <div v-if="!myArray" class="p-4">
+      <div v-if="!data.user.Sessions" class="p-4">
         <h2 class="text-2xl font-bold mb-4">Cooking Sessions</h2>
         <p>No sessions yet!</p>
       </div>
       <div v-else class="p-4 w-full">
         <h2 class="text-2xl font-bold mb-4">Cooking Sessions</h2>
-        <div v-for="session in myArray.sessions" :key="session.id" class="mb-4">
+        <div
+          v-for="session in data.user.Sessions"
+          :key="session.id"
+          class="mb-4"
+        >
           <button
             @click="goto(`/${session.id}`)"
             class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg w-full text-left"
