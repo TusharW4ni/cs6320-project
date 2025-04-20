@@ -2,20 +2,24 @@ import prisma from "~/lib/prisma";
 
 export default defineEventHandler(async (event) => {
   try {
-    const userId = getRouterParam(event, "userId");
-    const sessions = await prisma.session.findMany({
+    const sessionId = getRouterParam(event, "sessionId");
+    const session = await prisma.session.findUnique({
       where: {
-        userId: Number(userId),
+        id: Number(sessionId),
         archived: false,
       },
       select: {
         id: true,
-        Recipe: true,
+        Recipe: {
+          include: {
+            Ingredients: true,
+          },
+        },
         Messages: true,
       },
     });
     setResponseStatus(event, 200);
-    return { sessions };
+    return { session };
   } catch (e) {
     setResponseStatus(event, 500);
     console.error(e);
