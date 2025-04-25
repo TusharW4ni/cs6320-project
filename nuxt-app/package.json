@@ -12,6 +12,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
     "@heroicons/vue": "^2.2.0",
+    "@notionhq/client": "^2.3.0",
     "jsonwebtoken": "^9.0.2",
     "nuxt": "^3.16.0",
     "nuxt-toastify": "^1.0.0",
