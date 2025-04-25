@@ -18,4 +18,7 @@ export default defineNuxtConfig({
     closeOnClick: true,
     pauseOnHover: true,
   },
+  devServer: {
+    host: "0.0.0.0",
+  },
 });
