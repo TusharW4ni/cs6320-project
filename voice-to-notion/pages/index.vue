@@ -4,6 +4,7 @@ const apiKey = ref<string>(""); // Use a ref to store the API key
 const mediaRecorder = ref<MediaRecorder | null>(null);
 const chunks = ref<Blob[]>([]);
 const audio = ref<HTMLAudioElement | null>(null);
+const audioFile = ref<File | null>(null);
 const mediaStream = ref<MediaStream | null>(null);
 const isRecording = ref(false);
 
@@ -64,25 +65,79 @@ function startRecording() {
     });
 }
 
+// function stopRecording() {
+//   if (mediaRecorder.value) {
+//     mediaRecorder.value.stop();
+//     isRecording.value = false;
+//     console.log("Recording stopped");
+
+//     mediaRecorder.value.onstop = () => {
+//       const blob = new Blob(chunks.value, { type: "audio/wav" });
+//       const audioFileName = `audio-${Date.now()}.wav`;
+//       audioFile.value = new File([blob], audioFileName, { type: "audio/wav" });
+//       const url = URL.createObjectURL(blob);
+//       audio.value = new Audio(url);
+//     };
+
+//     if (mediaStream.value) {
+//       mediaStream.value.getTracks().forEach((track) => track.stop());
+//       console.log("Microphone capture stopped");
+//     }
+
+//     sendToServer(audioFile.value);
+//   } else {
+//     console.error("MediaRecorder is not initialized");
+//   }
+// }
+
 function stopRecording() {
   if (mediaRecorder.value) {
     mediaRecorder.value.stop();
     isRecording.value = false;
     console.log("Recording stopped");
 
+    // Set up the callback that runs AFTER stopping is complete
     mediaRecorder.value.onstop = () => {
       const blob = new Blob(chunks.value, { type: "audio/wav" });
+      const audioFileName = `audio-${Date.now()}.wav`;
+      audioFile.value = new File([blob], audioFileName, { type: "audio/wav" }); // Create the File here
       const url = URL.createObjectURL(blob);
       audio.value = new Audio(url);
+
+      // --- CALL sendToServer *HERE* AFTER audioFile.value is ready ---
+      console.log("Audio file created, sending to server...");
+      sendToServer(audioFile.value);
+      // --- End of change ---
     };
 
     if (mediaStream.value) {
       mediaStream.value.getTracks().forEach((track) => track.stop());
       console.log("Microphone capture stopped");
     }
+
+    // --- REMOVE THE PREMATURE CALL FROM HERE ---
+    // sendToServer(audioFile.value); // <-- REMOVE THIS LINE
   } else {
     console.error("MediaRecorder is not initialized");
   }
+}
+
+async function sendToServer(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  await $fetch("/api/gemini/get/audio-transcript", {
+    method: "POST",
+    body: formData,
+  });
+  // .then((res) => {
+  //   console.log("res", res);
+  //   useToastify("Audio transcription successful");
+  // })
+  // .catch((err) => {
+  //   console.error("err", err);
+  //   useToastify("Audio transcription failed");
+  // });
+  // })
 }
 </script>
 
