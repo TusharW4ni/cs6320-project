@@ -19,6 +19,8 @@ const userNameEmpty = ref(false);
 async function goto(location: string) {
   if (location.includes("logout")) {
     window.location.href = location;
+  } else if (location === "back") {
+    window.history.back();
   } else {
     await navigateTo(location);
   }
@@ -36,7 +38,7 @@ function handleUserNameEmpty(value: boolean) {
     <div class="w-1/2">
       <div class="flex justify-between">
         <button
-          @click="goto('/new-session')"
+          @click="goto('back')"
           class="flex justify-center items-center rounded-md bg-gray-700 hover:bg-gray-800 py-1 px-2 my-10"
         >
           <ArrowLeftIcon class="w-6 h-6 mx-1" />
