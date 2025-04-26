@@ -123,7 +123,7 @@ async function sendToServer(file: File) {
       />
       <div
         v-if="isRecording"
-        class="absolute inset-0 rounded-full border-4 border-blue-500 animate-glow"
+        class="absolute inset-0 rounded-full border-4 border-red-500 animate-glow"
       ></div>
       <div
         v-else
@@ -141,13 +141,13 @@ async function sendToServer(file: File) {
 /* Intense glowing effect for the image */
 @keyframes glow {
   0% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.7);
+    box-shadow: 0 0 20px rgba(246, 81, 59, 0.7);
   }
   50% {
-    box-shadow: 0 0 40px rgba(59, 130, 246, 1);
+    box-shadow: 0 0 40px rgb(246, 59, 59);
   }
   100% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.7);
+    box-shadow: 0 0 20px rgba(246, 59, 59, 0.7);
   }
 }
 
