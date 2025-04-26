@@ -1,0 +1,29 @@
+meta {
+  name: new-page
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:3000/api/ntn/pages/post
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ntnApiKey": "ntn_l40894685324HmfNBoJYdXNkuJNuHcGQ2AHXknyLmoma3z",
+    "parentPageTitle": "Home",
+    "title": "TESTING 123",
+    "content": "this is a test new page from voice-to-notion."
+  }
+}
+
+body:text {
+  {
+  "ntnApiKey":"ntn_l40894685324HmfNBoJYdXNkuJNuHcGQ2AHXknyLmoma3z",
+  "parentPageTitle":"Home",
+  "title":"TESTING 123",
+  "content":"this is a test new page from voice-to-notion."
+  }
+}

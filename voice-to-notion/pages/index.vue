@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const apiKey = ref<string>("");
+const parentPageTitle = ref<string>("");
 const mediaRecorder = ref<MediaRecorder | null>(null);
 const chunks = ref<Blob[]>([]);
 const audio = ref<HTMLAudioElement | null>(null);
@@ -7,9 +8,23 @@ const audioFile = ref<File | null>(null);
 const mediaStream = ref<MediaStream | null>(null);
 const isRecording = ref(false);
 const transcription = ref<string>("");
+const user = ref<any>(null);
+const avatar_url = ref<string>("");
 
-onMounted(() => {
+onMounted(async () => {
   apiKey.value = localStorage.getItem("apiKey") || "";
+  parentPageTitle.value = localStorage.getItem("parentPageTitle") || "";
+  if (apiKey.value) {
+    try {
+      const res = await $fetch(`/api/ntn/user/get/${apiKey.value}`);
+      user.value = res;
+      avatar_url.value = user.value.avatar_url || "";
+    } catch (err) {
+      console.error("Error fetching user data:", err);
+    }
+  } else {
+    console.error("API key is missing");
+  }
 });
 
 function startRecording() {
@@ -71,13 +86,15 @@ function stopRecording() {
 async function sendToServer(file: File) {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("ntnApiKey", apiKey.value);
+  formData.append("parentPageTitle", parentPageTitle.value);
   try {
-    const res = await $fetch("/api/gemini/get/audio-transcript", {
+    const res = await $fetch("/api/dispatcher", {
       method: "POST",
       body: formData,
     });
     console.log("res", res);
-    transcription.value = res.transcript;
+    // transcription.value = res.transcript;
     useToastify("Audio transcription successful");
   } catch (err) {
     console.error("err", err);
@@ -88,6 +105,9 @@ async function sendToServer(file: File) {
 
 <template>
   <Navbar />
+  <div class="flex w-full justify-center items-center">
+    <img :src="avatar_url" alt="User Profile Picture" class="w-46 md:w-80" />
+  </div>
   <div
     class="flex flex-col items-center justify-center space-y-4 p-6 bg-white text-gray-800 border border-gray-300 rounded-lg shadow-sm"
   >

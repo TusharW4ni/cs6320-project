@@ -1,10 +1,15 @@
 <script setup lang="ts">
 const apiKey = ref<string>("");
+const parentPageTitle = ref<string>("");
 
 onMounted(() => {
   const storedApiKey = localStorage.getItem("apiKey");
   if (storedApiKey) {
     apiKey.value = storedApiKey;
+  }
+  const pageTitle = localStorage.getItem("parentPageTitle");
+  if (pageTitle) {
+    parentPageTitle.value = pageTitle;
   }
 });
 
@@ -19,6 +24,14 @@ const handleSubmit = (event: Event) => {
   } else {
     localStorage.removeItem("apiKey");
     useToastify("Invalid API key format");
+  }
+
+  if (parentPageTitle.value) {
+    localStorage.setItem("parentPageTitle", parentPageTitle.value);
+    useToastify("Page title saved successfully");
+  } else {
+    localStorage.removeItem("parentPageTitle");
+    useToastify("Page title cleared successfully");
   }
 };
 </script>
@@ -40,7 +53,7 @@ const handleSubmit = (event: Event) => {
                   <input
                     v-model="apiKey"
                     type="text"
-                    class="border border-gray-300 rounded p-1 w-full"
+                    class="border border-gray-300 rounded p-1 w-full focus:bg-black focus:text-white"
                     placeholder="Enter your API key"
                   />
                   <router-link
@@ -50,6 +63,17 @@ const handleSubmit = (event: Event) => {
                   >
                     ?
                   </router-link>
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2 font-gowun font-bold">Connected Page Title</td>
+                <td class="p-2 flex items-center">
+                  <input
+                    v-model="parentPageTitle"
+                    type="text"
+                    class="border border-gray-300 rounded p-1 w-full focus:bg-black focus:text-white"
+                    placeholder="Enter the title of the page you connected to."
+                  />
                 </td>
               </tr>
               <tr>
