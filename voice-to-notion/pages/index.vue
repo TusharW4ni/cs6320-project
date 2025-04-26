@@ -7,7 +7,6 @@ const audio = ref<HTMLAudioElement | null>(null);
 const audioFile = ref<File | null>(null);
 const mediaStream = ref<MediaStream | null>(null);
 const isRecording = ref(false);
-const transcription = ref<string>("");
 const user = ref<any>(null);
 const avatar_url = ref<string>("");
 
@@ -95,45 +94,95 @@ async function sendToServer(file: File) {
     });
     console.log("res", res);
     // transcription.value = res.transcript;
-    useToastify("Audio transcription successful");
+    useToastify("Audio processing successful");
   } catch (err) {
     console.error("err", err);
-    useToastify("Audio transcription failed");
+    useToastify("Audio processing failed");
   }
 }
 </script>
 
 <template>
   <Navbar />
-  <div class="flex w-full justify-center items-center">
-    <img :src="avatar_url" alt="User Profile Picture" class="w-46 md:w-80" />
-  </div>
   <div
-    class="flex flex-col items-center justify-center space-y-4 p-6 bg-white text-gray-800 border border-gray-300 rounded-lg shadow-sm"
+    class="flex flex-col items-center justify-center w-full h-[calc(100vh-10rem)] md:h-[calc(100vh-5rem)] relative"
+    :class="{ recording: isRecording }"
   >
-    <button
-      @click="startRecording"
-      :disabled="isRecording"
-      class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-md border border-gray-400 transition duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
+    <div
+      class="relative flex items-center justify-center cursor-pointer"
+      @mousedown="startRecording"
+      @mouseup="stopRecording"
+      @mouseleave="isRecording && stopRecording()"
+      @touchstart.prevent="startRecording"
+      @touchend.prevent="stopRecording"
     >
-      {{ isRecording ? "Recording..." : "Start Recording" }}
-    </button>
-    <button
-      @click="stopRecording"
-      :disabled="!isRecording"
-      class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-md border border-gray-400 transition duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
-    >
-      Stop Recording
-    </button>
-    <div v-if="transcription" class="mt-4 text-gray-700">
-      <h3 class="text-lg font-semibold">Transcription:</h3>
-      <p class="mt-2">{{ transcription }}</p>
+      <img
+        :src="avatar_url"
+        alt="User Profile Picture"
+        class="w-36 md:w-80 rounded-full border-4 border-gray-300"
+      />
+      <div
+        v-if="isRecording"
+        class="absolute inset-0 rounded-full border-4 border-blue-500 animate-glow"
+      ></div>
+      <div
+        v-else
+        class="absolute inset-0 rounded-full border-4 border-blue-500 animate-ripple"
+      ></div>
     </div>
-    <!-- <audio
-      v-if="audio"
-      :src="audio.src"
-      controls
-      class="w-full max-w-md mt-4 border border-gray-300 rounded-md"
-    ></audio> -->
+    <div
+      v-if="isRecording"
+      class="absolute inset-0 border-4 border-blue-500 animate-screen-glow pointer-events-none"
+    ></div>
   </div>
 </template>
+
+<style scoped>
+/* Intense glowing effect for the image */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(59, 130, 246, 1);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.7);
+  }
+}
+
+.animate-glow {
+  animation: glow 1.2s infinite;
+}
+
+/* Ripple effect for the image */
+@keyframes ripple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 40px rgba(59, 130, 246, 0);
+  }
+}
+
+.animate-ripple {
+  animation: ripple 2s infinite;
+}
+
+/* Intense glowing effect for the screen border */
+@keyframes screen-glow {
+  0% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 60px rgba(59, 130, 246, 1);
+  }
+  100% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.7);
+  }
+}
+
+.animate-screen-glow {
+  animation: screen-glow 1.2s infinite;
+}
+</style>
