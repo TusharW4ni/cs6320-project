@@ -1,10 +1,14 @@
 <script setup lang="ts">
 // import ILovePDFApi from "@ilovepdf/ilovepdf-nodejs";
 
-// const ilovepdf = new ILovePDFApi();
-
-const files = ref<File[]>([]);
 // const config = useRuntimeConfig();
+// const ilovepdf = new ILovePDFApi(
+//   config.ILOVEPDF_PUBLIC_KEY,
+//   config.ILOVEPDF_PRIVATE_KEY
+// );
+
+// ilovepdf.new
+const files = ref<File[]>([]);
 
 function handleFileUpload(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -28,7 +32,7 @@ function uploadFiles() {
   files.value.forEach((file) => {
     formData.append("file", file); // Update field name to 'file'
   });
-
+  // console.log("FormData contents:", formData.getAll("file"));
   $fetch("/api/gemini/process-files", {
     method: "POST",
     body: formData,

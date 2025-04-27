@@ -5,6 +5,8 @@ export default defineNuxtConfig({
   modules: ["@nuxtjs/tailwindcss", "@nuxtjs/google-fonts", "nuxt-toastify"],
   runtimeConfig: {
     GEMINI_KEY: "",
+    ILOVEPDF_PUBLIC_KEY: "",
+    ILOVEPDF_PRIVATE_KEY: "",
   },
   googleFonts: {
     families: {

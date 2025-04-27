@@ -1,11 +1,19 @@
-import { GoogleGenAI, createPartFromUri } from "@google/genai";
-import { extname } from "path";
-import { readFileSync, writeFileSync } from "fs";
-import { execSync } from "child_process";
+import { GoogleGenAI } from "@google/genai";
+import { extname, join } from "path";
+import { renameSync, mkdirSync, existsSync, readdirSync, unlinkSync } from "fs";
+import formidable from "formidable";
+import ILovePDFApi from "@ilovepdf/ilovepdf-nodejs";
+import ILovePDFFile from "@ilovepdf/ilovepdf-nodejs/ILovePDFFile";
+import fs from "fs";
 
 export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig();
   const apiKey = runtimeConfig.GEMINI_KEY;
+  const ilpPublicKey = runtimeConfig.ILOVEPDF_PUBLIC_KEY;
+  const ilpPrivateKey = runtimeConfig.ILOVEPDF_PRIVATE_KEY;
+  const ilovepdf = new ILovePDFApi(ilpPublicKey, ilpPrivateKey);
+
+  const task = ilovepdf.newTask("officepdf");
 
   if (!apiKey) {
     console.error("Gemini API key is not configured.");
@@ -16,102 +24,111 @@ export default defineEventHandler(async (event) => {
   const ai = new GoogleGenAI({ apiKey: apiKey });
 
   try {
-    const formData = await readMultipartFormData(event);
-
-    if (!formData) {
-      console.error("Could not read multipart form data.");
-      setResponseStatus(event, 400);
-      return { error: "Invalid form data received." };
+    // Ensure the upload directory exists
+    const uploadDir = join(process.cwd(), "uploads");
+    if (!existsSync(uploadDir)) {
+      mkdirSync(uploadDir);
     }
 
-    const fileEntry = formData.find((field) => field.name === "file");
+    // Clear the upload directory
+    clearUploads(uploadDir);
 
-    if (!fileEntry || !fileEntry.data) {
-      console.error("File part not found in form data.");
-      setResponseStatus(event, 400);
-      return { error: "File not found in the request." };
-    }
+    // Parse the incoming form data
+    const form = formidable({
+      multiples: true,
+      uploadDir: uploadDir, // Save files directly to the upload directory
+      keepExtensions: true, // Keep file extensions
+    });
 
-    let fileBuffer = fileEntry.data;
-    let mimeType = fileEntry.type || "application/octet-stream";
-    const fileExtension = extname(fileEntry.filename || "").toLowerCase();
-
-    console.log(
-      `Received file: ${fileEntry.filename} (${mimeType}, ${fileBuffer.length} bytes)`
+    const { files } = await new Promise<{ files: formidable.Files }>(
+      (resolve, reject) => {
+        form.parse(event.node.req, (err, fields, files) => {
+          if (err) reject(err);
+          else resolve({ files });
+        });
+      }
     );
 
-    if (![".pdf", ".doc", ".docx"].includes(fileExtension)) {
-      console.error("Unsupported file type.");
-      setResponseStatus(event, 400);
-      return { error: "Only PDF, DOC, and DOCX files are supported." };
-    }
+    // Rename files to their original filenames
+    const savedFiles: string[] = [];
+    for (const fileKey in files) {
+      const fileOrFiles = files[fileKey];
 
-    // Convert DOC/DOCX to PDF if necessary
-    if ([".doc", ".docx"].includes(fileExtension)) {
-      const tempInputPath = `./temp_input${fileExtension}`;
-      const tempOutputPath = `./temp_output.pdf`;
+      // Handle both single file and array of files
+      const fileArray = Array.isArray(fileOrFiles)
+        ? fileOrFiles
+        : [fileOrFiles];
 
-      writeFileSync(tempInputPath, fileBuffer);
+      for (const file of fileArray) {
+        if (!file) {
+          console.error(`File is undefined for key: ${fileKey}`);
+          continue; // Skip undefined files
+        }
 
-      try {
-        execSync(
-          `soffice --headless --convert-to pdf ${tempInputPath} --outdir ./`
-        );
-        fileBuffer = readFileSync(tempOutputPath);
-        mimeType = "application/pdf";
+        const originalFilename =
+          file.originalFilename || file.newFilename || `file_${Date.now()}`;
+        const newFilePath = join(uploadDir, originalFilename);
 
-        console.log("File converted to PDF successfully.");
-      } catch (conversionError) {
-        console.error("Error converting file to PDF:", conversionError);
-        setResponseStatus(event, 500);
-        return { error: "Failed to convert file to PDF." };
+        if (file.filepath) {
+          renameSync(file.filepath, newFilePath); // Rename the file to its original name
+          savedFiles.push(newFilePath);
+        } else {
+          console.error(`Filepath is undefined for file: ${originalFilename}`);
+        }
       }
     }
 
-    const fileBlob = new Blob([fileBuffer], { type: mimeType });
+    console.log("Files saved to server:", savedFiles);
 
-    const file = await ai.files.upload({
-      file: fileBlob,
-      config: {
-        displayName: fileEntry.filename || "Uploaded Document",
-      },
+    savedFiles.forEach((file) => {
+      if (extname(file) === ".doc" || extname(file) === ".docx") {
+        task
+          .start()
+          .then(() => {
+            // console.log("Task started successfully.");
+            const docFile = new ILovePDFFile(file);
+            return task.addFile(docFile);
+          })
+          .then(() => {
+            // console.log("File added to task successfully.");
+            return task.process();
+          })
+          .then(() => {
+            // console.log("Task processed successfully.");
+            return task.download();
+          })
+          .then((data) => {
+            // console.log("Task downloaded successfully.");
+            unlinkSync(file);
+            fs.writeFileSync("uploads/converted.pdf", data);
+          });
+      }
     });
 
-    // Wait for the file to be processed.
-    let getFile = await ai.files.get({ name: file.name });
-    while (getFile.state === "PROCESSING") {
-      getFile = await ai.files.get({ name: file.name });
-      console.log(`current file status: ${getFile.state}`);
-      console.log("File is still processing, retrying in 5 seconds");
+    // upload
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 5000);
-      });
-    }
-
-    if (getFile.state === "FAILED") {
-      throw new Error("File processing failed.");
-    }
-
-    const content = [
-      "Summarize the content of this document:",
-      createPartFromUri(getFile.uri, getFile.mimeType),
-    ];
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: content,
-    });
-
-    console.log("Summary result:", response.text);
     setResponseStatus(event, 200);
-    return { message: "File summarized successfully", summary: response.text };
+    return { message: "Files uploaded successfully", files: savedFiles };
   } catch (error: any) {
-    console.error("Error processing file or calling Gemini API:", error);
+    console.error("Error processing file upload:", error);
     setResponseStatus(event, 500);
     return {
-      error: "Failed to process file or summarize content.",
+      error: "Failed to upload files.",
       details: error.message,
     };
   }
 });
+
+// Function to clear all files in the uploads directory
+function clearUploads(directory: string) {
+  try {
+    const files = readdirSync(directory);
+    for (const file of files) {
+      const filePath = join(directory, file);
+      unlinkSync(filePath); // Delete each file
+    }
+    console.log("Uploads directory cleared.");
+  } catch (error) {
+    console.error("Error clearing uploads directory:", error);
+  }
+}
