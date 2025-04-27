@@ -7,10 +7,15 @@
       <!-- <div class="text-gray-500">v1.0.0</div> -->
     </div>
     <div class="flex items-center space-x-4 mx-3">
-      <NuxtLink to="/" class="text-gray-500 hover:text-black">Home</NuxtLink>
-      <NuxtLink to="/settings" class="text-gray-500 hover:text-black"
-        >Settings</NuxtLink
-      >
+      <NuxtLink to="/voice" class="text-gray-500 hover:text-black">
+        Voice
+      </NuxtLink>
+      <NuxtLink to="/files" class="text-gray-500 hover:text-black">
+        Files
+      </NuxtLink>
+      <NuxtLink to="/settings" class="text-gray-500 hover:text-black">
+        Settings
+      </NuxtLink>
     </div>
   </div>
 </template>

@@ -1,6 +1,7 @@
 import { Client } from "@notionhq/client";
 
 export default defineEventHandler(async (event) => {
+  console.log("Processing request to create a Notion page...");
   try {
     const { ntnApiKey, parentPageTitle, title, content } = await readBody(
       event

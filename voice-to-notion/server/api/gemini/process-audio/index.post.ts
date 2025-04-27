@@ -47,11 +47,14 @@ export default defineEventHandler(async (event) => {
 
     const ntnApiKey = ntnApiKeyEntry.data.toString();
     const parentPageTitle = parentPageTitleEntry.data.toString();
-
-    console.log({ ntnApiKey, parentPageTitle });
-
     const audioBuffer = fileEntry.data;
     const mimeType = fileEntry.type || "audio/wav";
+
+    if (!audioBuffer || audioBuffer.length === 0) {
+      console.error("Uploaded audio file is empty.");
+      setResponseStatus(event, 400);
+      return { error: "Uploaded audio file is empty." };
+    }
 
     console.log(
       `Received file: ${fileEntry.filename} (${mimeType}, ${audioBuffer.length} bytes)`
@@ -137,7 +140,7 @@ export default defineEventHandler(async (event) => {
     console.error("Error processing audio or calling Gemini API:", error);
     setResponseStatus(event, 500);
     return {
-      error: "Failed to process audio or get transcription.",
+      error: "Failed to process audio.",
       details: error.message,
     };
   }
