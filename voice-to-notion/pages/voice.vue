@@ -128,8 +128,8 @@ function handleRecording() {
         class="w-36 md:w-80 rounded-full border-4 border-gray-300"
       />
       <div
-        v-if="!avatar_url"
-        class="w-36 md:w-80 h-36 md:h-80 rounded-full border-4 border-gray-300 flex items-center justify-center"
+        v-else
+        class="w-36 h-36 rounded-full border-4 border-gray-300 flex items-center justify-center"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

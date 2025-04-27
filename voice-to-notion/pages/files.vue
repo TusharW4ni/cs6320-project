@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import ILovePDFApi from "@ilovepdf/ilovepdf-nodejs";
+// import ILovePDFApi from "@ilovepdf/ilovepdf-nodejs";
 
 // const ilovepdf = new ILovePDFApi();
 
 const files = ref<File[]>([]);
-const config = useRuntimeConfig();
+// const config = useRuntimeConfig();
 
 function handleFileUpload(event: Event) {
   const input = event.target as HTMLInputElement;
