@@ -9,6 +9,7 @@ const mediaStream = ref<MediaStream | null>(null);
 const isRecording = ref(false);
 const user = ref<any>(null);
 const avatar_url = ref<string>("");
+const textPrompt = ref<string>("");
 
 onMounted(async () => {
   apiKey.value = localStorage.getItem("apiKey") || "";
@@ -109,6 +110,38 @@ function handleRecording() {
     startRecording();
   }
 }
+
+async function sendTextPrompt() {
+  if (!textPrompt.value.trim()) {
+    useToastify("Text prompt cannot be empty");
+    return;
+  }
+
+  try {
+    const res = await $fetch("/api/gemini/process-text", {
+      method: "POST",
+      body: {
+        textPrompt: textPrompt.value,
+        ntnApiKey: apiKey.value,
+        parentPageTitle: parentPageTitle.value,
+      },
+    });
+    console.log("Text prompt response:", res);
+    useToastify("Text prompt processed successfully");
+  } catch (err) {
+    console.error("Error processing text prompt:", err);
+    useToastify("Failed to process text prompt");
+  } finally {
+    // Clear the text input after sending
+    textPrompt.value = "";
+  }
+}
+
+function handleKeyPress(event: KeyboardEvent) {
+  if (event.key === "Enter") {
+    sendTextPrompt();
+  }
+}
 </script>
 
 <template>
@@ -116,6 +149,7 @@ function handleRecording() {
   <div
     class="flex flex-col items-center justify-center w-full h-[calc(100vh-10rem)] md:h-[calc(100vh-5rem)] relative"
   >
+    <!-- Existing voice recording button -->
     <button
       @click="handleRecording"
       class="relative flex items-center justify-center ripple-container"
@@ -147,6 +181,36 @@ function handleRecording() {
         </svg>
       </div>
     </button>
+
+    <!-- New text prompt input -->
+    <div class="mt-24 w-full max-w-md">
+      <div class="flex shadow-sm rounded-md overflow-hidden">
+        <!-- Text input grows to fill -->
+        <input
+          v-model="textPrompt"
+          @keydown="handleKeyPress"
+          type="text"
+          placeholder="Enter your text prompt"
+          class="flex-1 px-4 py-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        />
+        <!-- Arrow button -->
+        <button
+          @click="sendTextPrompt"
+          class="flex-none bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors duration-150 px-4 flex items-center justify-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-6 h-6 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
