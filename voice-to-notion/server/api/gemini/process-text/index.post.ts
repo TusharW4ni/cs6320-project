@@ -1,93 +1,129 @@
+// server/api/gemini/process-text/index.post.ts
 import { defineEventHandler, readBody, setResponseStatus } from "h3";
-import { GoogleGenAI, FunctionDeclaration, Type } from "@google/genai";
-
-interface Tools {
-  functionDeclarations: FunctionDeclaration[];
-}
+import { GoogleGenAI } from "@google/genai";
+import { createNewPageFn, createAssignmentFn } from "~/server/lib/notion-tools";
+import { ensureAssignmentsDatabase, addAssignment } from "~/server/lib/notion";
 
 export default defineEventHandler(async (event) => {
-  const runtimeConfig = useRuntimeConfig();
-  const apiKey = runtimeConfig.GEMINI_KEY;
+  console.log("🚀 [process-text] start");
 
-  if (!apiKey) {
-    console.error("Gemini API key is not configured.");
+  const { GEMINI_KEY } = useRuntimeConfig();
+  if (!GEMINI_KEY) {
+    console.error("❌ [process-text] GEMINI_KEY not set");
     setResponseStatus(event, 500);
-    return { error: "Gemini API key not configured on the server." };
+    return { error: "Gemini API key not configured." };
   }
 
-  const ai = new GoogleGenAI({ apiKey: apiKey });
-
+  let body: any;
   try {
-    const { textPrompt, ntnApiKey, parentPageTitle } = await readBody(event);
+    body = await readBody(event);
+    console.log("📥 [process-text] body:", body);
+  } catch (e: any) {
+    console.error("❌ [process-text] readBody failed:", e);
+    setResponseStatus(event, 400);
+    return { error: "Invalid request body." };
+  }
 
-    if (!textPrompt || !ntnApiKey || !parentPageTitle) {
-      console.error("Missing required fields: textPrompt, ntnApiKey, or parentPageTitle.");
-      setResponseStatus(event, 400);
-      return { error: "Missing required fields: textPrompt, ntnApiKey, or parentPageTitle." };
+  const { textPrompt, ntnApiKey, parentPageTitle } = body;
+  if (!textPrompt || !ntnApiKey || !parentPageTitle) {
+    console.error("❌ [process-text] Missing fields:", { textPrompt, ntnApiKey, parentPageTitle });
+    setResponseStatus(event, 400);
+    return { error: "Missing textPrompt, ntnApiKey or parentPageTitle." };
+  }
+
+  // Lookup the parent page ID via existing pages.get endpoint
+  let parentPageId: string;
+  try {
+    const pages = await $fetch('/api/ntn/pages/get', {
+      method: 'POST',
+      body: { apiKey: ntnApiKey, title: parentPageTitle }
+    });
+    if (!Array.isArray(pages) || pages.length === 0) {
+      throw new Error(`Page titled "${parentPageTitle}" not found`);
     }
+    parentPageId = pages[0].id;
+    console.log('ℹ️ [process-text] resolved parentPageId:', parentPageId);
+  } catch (e: any) {
+    console.error('❌ [process-text] lookup parentPageId failed:', e);
+    setResponseStatus(event, 500);
+    return { error: `Failed to find parent page: ${e.message}` };
+  }
 
-    console.log(`Received text prompt: "${textPrompt}"`);
+  console.log(`✉️ [process-text] prompt: "${textPrompt}"`);
 
-    const tools: Tools[] = [
-      {
-        functionDeclarations: [
-          {
-            name: "createNewPage",
-            description: "Create a new page in Notion when asked to do so",
-            parameters: {
-              type: Type.OBJECT,
-              properties: {
-                title: {
-                  type: Type.STRING,
-                  description: "The title of the page to create",
-                },
-                content: {
-                  type: Type.STRING,
-                  description: "The content of the page to create",
-                },
-              },
-              required: ["title", "content"],
-            },
-          },
-        ],
-      },
-    ];
+  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+  const tools = [{ functionDeclarations: [createNewPageFn, createAssignmentFn] }];
+  console.log("🛠️ [process-text] tools:", tools[0].functionDeclarations.map(f => f.name));
 
-    console.log("Sending data to Gemini API...");
-    const result = await ai.models.generateContent({
+  let result: any;
+  try {
+    console.log("📤 [process-text] calling Gemini…");
+    result = await ai.models.generateContent({
       model: "gemini-2.0-flash",
       contents: [
         { text: "Decide which function to call based on this text prompt:" },
-        { text: textPrompt },
+        { text: textPrompt }
       ],
-      config: {
-        tools,
-      },
+      config: { tools }
     });
+    console.log("📥 [process-text] raw response:", JSON.stringify(result, null, 2));
+  } catch (e: any) {
+    console.error("❌ [process-text] Gemini error:", e);
+    setResponseStatus(event, 500);
+    return { error: "Gemini API call failed.", details: e.message };
+  }
 
-    result.functionCalls?.map(async (functionCall) => {
-      if (functionCall.name === "createNewPage") {
-        console.log("Creating a new page in Notion...");
+  console.log("ℹ️ [process-text] functionCalls:", result.functionCalls);
+
+  // Handle function calls
+  for (const call of result.functionCalls || []) {
+    console.log(`🔔 [process-text] call.name=${call.name}`, call.args);
+
+    if (call.name === "createNewPage") {
+      const title = call.args?.title || "Untitled Page";
+      const content = call.args?.content || "No content provided";
+      console.log("📄 [process-text] invoking createNewPage…", { title, content });
+      try {
         await $fetch("/api/ntn/pages/post", {
           method: "POST",
-          body: {
-            ntnApiKey,
-            parentPageTitle,
-            title: functionCall.args?.title || "Untitled Page",
-            content: functionCall.args?.content || "No content provided",
-          },
+          body: { ntnApiKey, parentPageTitle, title, content }
         });
+        console.log("✅ [process-text] createNewPage succeeded");
+      } catch (e: any) {
+        console.error("❌ [process-text] createNewPage failed:", e);
       }
-    });
 
-    setResponseStatus(event, 200);
-    return { message: "Text processed successfully" };
-  } catch (error: any) {
-    console.error("Error processing text or calling Gemini API:", error);
-    setResponseStatus(event, 500);
-    return {
-      error: "Failed to process text.",
-      details: error.message,
-    };
+    } else if (call.name === "createAssignment") {
+      const { course, title, dueDate, taskTags } = call.args as any;
+      console.log("🏷️ [process-text] invoking createAssignment…", { course, title, dueDate, taskTags });
+      try {
+        const dbId = await ensureAssignmentsDatabase(ntnApiKey, parentPageId);
+        await addAssignment(dbId, { course, title, dueDate, taskTags }, ntnApiKey);
+        console.log("✅ [process-text] createAssignment succeeded");
+      } catch (e: any) {
+        console.error("❌ [process-text] createAssignment failed:", e);
+      }
+
+    } else {
+      console.warn("⚠️ [process-text] unknown function call:", call.name);
+    }
   }
+
+  // Fallback: if no functionCalls, default to page creation
+  if (!result.functionCalls?.length) {
+    console.log("📄 [process-text] no function call — default createNewPage");
+    try {
+      await $fetch("/api/ntn/pages/post", {
+        method: "POST",
+        body: { ntnApiKey, parentPageTitle, title: "Untitled Page", content: "No content provided" }
+      });
+      console.log("✅ [process-text] default createNewPage succeeded");
+    } catch (e: any) {
+      console.error("❌ [process-text] default createNewPage failed:", e);
+    }
+  }
+
+  setResponseStatus(event, 200);
+  console.log("🏁 [process-text] end");
+  return { message: "Done" };
 });
