@@ -3,11 +3,11 @@ import { GoogleGenAI } from "@google/genai";
 import { promises as fs } from "fs";
 import path from "path";
 
+// Initialize Gemini AI client with API key from environment
+
 export default defineEventHandler(async (event: H3Event) => {
   const runtimeConfig = useRuntimeConfig();
-  // Initialize Gemini AI client with API key from environment
   const ai = new GoogleGenAI({ apiKey: runtimeConfig.GEMINI_KEY });
-
   try {
     // Optional prompt from request body
     const { prompt } = await readBody<{ prompt?: string }>(event);
@@ -21,12 +21,10 @@ export default defineEventHandler(async (event: H3Event) => {
       return { error: "No files found in uploads folder." };
     }
 
-    // Prepare contents array: initial prompt + each file's inline data
-    const contents: any[] = [];
-    contents.push({
-      text: prompt || "Please summarize the following documents.",
-    });
+    // Object to hold summaries per file
+    const summaries: Record<string, string> = {};
 
+    // Process each file one at a time
     for (const filename of filenames) {
       const safeName = path.basename(filename);
       const filePath = path.join(uploadsDir, safeName);
@@ -37,24 +35,35 @@ export default defineEventHandler(async (event: H3Event) => {
       const ext = path.extname(safeName).toLowerCase();
       let mimeType = "application/octet-stream";
       if (ext === ".pdf") mimeType = "application/pdf";
-      // else if (ext === ".txt") mimeType = "text/plain";
-      // else if (ext === ".docx")
-      //   mimeType =
-      //     "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      else if (ext === ".txt") mimeType = "text/plain";
+      else if (ext === ".docx")
+        mimeType =
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-      contents.push({
-        inlineData: { mimeType, data: dataBase64 },
+      // Prepare Gemini payload for this single file
+      const contents: any[] = [
+        {
+          text: prompt
+            ? `${prompt} (File: ${safeName})`
+            : `Please summarize the following document: ${safeName}`,
+        },
+        {
+          inlineData: { mimeType, data: dataBase64 },
+        },
+      ];
+
+      // Call Gemini model
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents,
       });
+
+      // Store the summary under the filename key
+      summaries[safeName] = response.text;
     }
 
-    // Call Gemini model with batched contents
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents,
-    });
-
-    // Return the combined summary
-    return { summary: response.text, raw: response };
+    // Return all summaries as a JSON object
+    return { summaries };
   } catch (err: any) {
     return {
       error: err.message || "An error occurred while summarizing files.",
