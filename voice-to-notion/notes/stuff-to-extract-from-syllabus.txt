@@ -1,0 +1,10 @@
+- course number in format: *.* where the stuff before the dot is the course number and the stuff after the dot is the section number.
+- professor name
+- professor email address
+- professor office hours
+- professor office location
+- class timings
+- class location
+- required course textbook(s)
+- exam dates
+- weightage given to homeworks, assignments, exams, attendance, etc.

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const files = ref<File[]>([]);
 const uploading = ref(false);
+const extracting = ref(false);
+const summaries = ref<Record<string, any>>({});
 
 function handleFileUpload(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -21,45 +23,38 @@ async function uploadFiles() {
     return;
   }
 
-  uploading.value = true;
+  uploading.value = true; // Start the uploading phase
   const formData = new FormData();
   files.value.forEach((file) => {
     formData.append("file", file);
   });
 
-  await $fetch("/api/gemini/process-files/upload", {
-    method: "POST",
-    body: formData,
-  })
-    .then(async (response) => {
-      console.log("Files uploaded successfully:", response);
-      // files.value = [];
-      const extractRes = await $fetch("/api/gemini/process-files/extract", {
-        method: "POST",
-        body: { paths: response.paths },
-      })
-        .then((response) => {
-          console.log("Files extracted successfully:", response);
-          useToastify("Files extracted successfully"); // Correctly closed
-          files.value = [];
-          uploading.value = false;
-        })
-        .catch((error) => {
-          console.error("Error extracting files:", error);
-          useToastify("Error extracting files"); // Correctly closed
-          files.value = [];
-          uploading.value = false;
-        });
-    })
-    .catch((error) => {
-      console.error("Error uploading files:", error);
-      uploading.value = false;
-      useToastify("Error uploading files");
-    })
-    .finally(() => {
-      uploading.value = false;
-      useToastify("Files uploaded successfully");
+  try {
+    const uploadResponse = await $fetch("/api/gemini/process-files/upload", {
+      method: "POST",
+      body: formData,
     });
+    console.log("Files uploaded successfully:", uploadResponse);
+
+    uploading.value = false; // End the uploading phase
+    extracting.value = true; // Start the extracting phase
+
+    const extractResponse = await $fetch("/api/gemini/process-files/extract", {
+      method: "POST",
+      body: { paths: uploadResponse.paths },
+    });
+    console.log("Files extracted successfully:", extractResponse);
+    summaries.value = extractResponse.summaries;
+
+    useToastify("Files extracted successfully");
+    files.value = []; // Clear the files after successful extraction
+  } catch (error) {
+    console.error("Error during upload or extraction:", error);
+    useToastify("An error occurred during upload or extraction");
+  } finally {
+    uploading.value = false;
+    extracting.value = false; // Ensure both states are reset
+  }
 }
 </script>
 
@@ -101,11 +96,25 @@ async function uploadFiles() {
     <button
       v-if="files.length > 0"
       @click.prevent="uploadFiles"
-      :disabled="uploading"
+      :disabled="uploading || extracting"
       class="mt-4 w-2/3 md:w-1/2 border border-black rounded hover:bg-black hover:text-white font-gowun font-bold"
     >
-      <span v-if="!uploading">Upload</span>
-      <span v-else>Uploading...</span>
+      <span v-if="!uploading && !extracting">Upload</span>
+      <span v-if="uploading && !extracting">Uploading...</span>
+      <span v-if="!uploading && extracting">Extracting...</span>
     </button>
+    <div v-if="Object.keys(summaries).length > 0" class="mt-4 w-2/3 md:w-1/2">
+      <h2 class="font-bold text-lg mb-2">Summaries</h2>
+      <ul>
+        <li
+          v-for="(summary, fileName) in summaries"
+          :key="fileName"
+          class="border border-black rounded p-2 mb-2 bg-gray-100"
+        >
+          <h3 class="font-bold">{{ fileName }}</h3>
+          <pre class="text-sm whitespace-pre-wrap">{{ summary }}</pre>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
