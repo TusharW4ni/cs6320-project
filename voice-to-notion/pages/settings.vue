@@ -42,8 +42,9 @@ const handleSubmit = (event: Event) => {
     <h1 class="font-gowun font-bold text-2xl m-4">Settings</h1>
     <div class="flex w-screen md:justify-center">
       <div
-        class="border border-gray-300 rounded p-4 m-4 w-screen md:w-1/2 flex justify-center"
+        class="border border-gray-300 rounded p-4 m-4 w-screen md:w-1/2 flex flex-col justify-center"
       >
+        <h1 class="font-gowun font-bold text-xl">Notion</h1>
         <form @submit="handleSubmit" class="w-full flex justify-center">
           <table>
             <tbody>

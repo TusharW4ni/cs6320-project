@@ -33,7 +33,7 @@ async function uploadFiles() {
   })
     .then(async (response) => {
       console.log("Files uploaded successfully:", response);
-      files.value = [];
+      // files.value = [];
       const extractRes = await $fetch("/api/gemini/process-files/extract", {
         method: "POST",
         body: { paths: response.paths },
@@ -41,10 +41,14 @@ async function uploadFiles() {
         .then((response) => {
           console.log("Files extracted successfully:", response);
           useToastify("Files extracted successfully"); // Correctly closed
+          files.value = [];
+          uploading.value = false;
         })
         .catch((error) => {
           console.error("Error extracting files:", error);
           useToastify("Error extracting files"); // Correctly closed
+          files.value = [];
+          uploading.value = false;
         });
     })
     .catch((error) => {

@@ -1,51 +1,63 @@
-// server/api/gemini/process-files/extract.post.ts
-import fs from "fs";
+import { defineEventHandler, readBody, H3Event } from "h3";
+import { GoogleGenAI } from "@google/genai";
+import { promises as fs } from "fs";
 import path from "path";
-import { createPartFromUri, GoogleGenAI } from "@google/genai";
-import { defineEventHandler, readBody, useRuntimeConfig } from "h3";
 
-export default defineEventHandler(async (event) => {
-  // 1️⃣ Parse input
-  const { paths } = await readBody(event);
-  if (!Array.isArray(paths) || paths.length === 0) {
-    throw new Error("Please provide an array of PDF file paths in ‘paths’.");
-  }
+export default defineEventHandler(async (event: H3Event) => {
+  const runtimeConfig = useRuntimeConfig();
+  // Initialize Gemini AI client with API key from environment
+  const ai = new GoogleGenAI({ apiKey: runtimeConfig.GEMINI_KEY });
 
-  // 2️⃣ Init Gemini client
-  const ai = new GoogleGenAI({ apiKey: useRuntimeConfig().GEMINI_KEY });
+  try {
+    // Optional prompt from request body
+    const { prompt } = await readBody<{ prompt?: string }>(event);
 
-  // 3️⃣ Upload + wait helper, now with mimeType
-  async function uploadAndWait(filePath: string) {
-    const displayName = path.basename(filePath);
-    // Tell Gemini it’s a PDF!
-    const file = await ai.files.upload({
-      // You can pass the path string directly; SDK will stream under the hood
-      file: filePath,
-      config: {
-        displayName,
-        mimeType: "application/pdf",
-      },
+    // Directory containing uploaded files
+    const uploadsDir = path.join(process.cwd(), "uploads");
+
+    // Read all filenames in uploads folder
+    const filenames = await fs.readdir(uploadsDir);
+    if (filenames.length === 0) {
+      return { error: "No files found in uploads folder." };
+    }
+
+    // Prepare contents array: initial prompt + each file's inline data
+    const contents: any[] = [];
+    contents.push({
+      text: prompt || "Please summarize the following documents.",
     });
-    // Poll until ready
-    let meta = await ai.files.get({ name: file.name });
-    while (meta.state === "PROCESSING") {
-      await new Promise((r) => setTimeout(r, 5_000));
-      meta = await ai.files.get({ name: file.name });
+
+    for (const filename of filenames) {
+      const safeName = path.basename(filename);
+      const filePath = path.join(uploadsDir, safeName);
+      const fileBuffer = await fs.readFile(filePath);
+      const dataBase64 = fileBuffer.toString("base64");
+
+      // Determine MIME type based on extension
+      const ext = path.extname(safeName).toLowerCase();
+      let mimeType = "application/octet-stream";
+      if (ext === ".pdf") mimeType = "application/pdf";
+      // else if (ext === ".txt") mimeType = "text/plain";
+      // else if (ext === ".docx")
+      //   mimeType =
+      //     "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+      contents.push({
+        inlineData: { mimeType, data: dataBase64 },
+      });
     }
-    if (meta.state !== "READY") {
-      throw new Error(`Failed to process ${displayName}`);
-    }
-    return createPartFromUri(meta.uri, meta.mimeType);
+
+    // Call Gemini model with batched contents
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents,
+    });
+
+    // Return the combined summary
+    return { summary: response.text, raw: response };
+  } catch (err: any) {
+    return {
+      error: err.message || "An error occurred while summarizing files.",
+    };
   }
-
-  // 4️⃣ Do all uploads in parallel
-  const parts = await Promise.all(paths.map(uploadAndWait));
-
-  // 5️⃣ Build your single summarize call
-  const res = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: [{ text: "Summarize these PDFs:" }, ...parts],
-  });
-
-  return { summary: res.text };
 });
