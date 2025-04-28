@@ -1,14 +1,6 @@
 <script setup lang="ts">
-// import ILovePDFApi from "@ilovepdf/ilovepdf-nodejs";
-
-// const config = useRuntimeConfig();
-// const ilovepdf = new ILovePDFApi(
-//   config.ILOVEPDF_PUBLIC_KEY,
-//   config.ILOVEPDF_PRIVATE_KEY
-// );
-
-// ilovepdf.new
 const files = ref<File[]>([]);
+const uploading = ref(false);
 
 function handleFileUpload(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -16,33 +8,53 @@ function handleFileUpload(event: Event) {
     files.value.push(...Array.from(input.files));
     console.log("Files uploaded:", files.value);
   }
+  input.value = "";
 }
 
 function removeFile(index: number) {
   files.value.splice(index, 1);
 }
 
-function uploadFiles() {
+async function uploadFiles() {
   if (files.value.length === 0) {
     console.error("No files to upload");
     return;
   }
 
+  uploading.value = true;
   const formData = new FormData();
   files.value.forEach((file) => {
-    formData.append("file", file); // Update field name to 'file'
+    formData.append("file", file);
   });
-  // console.log("FormData contents:", formData.getAll("file"));
-  $fetch("/api/gemini/process-files", {
+
+  await $fetch("/api/gemini/process-files/upload", {
     method: "POST",
     body: formData,
   })
-    .then((response) => {
+    .then(async (response) => {
       console.log("Files uploaded successfully:", response);
-      files.value = []; // Clear the files after successful upload
+      files.value = [];
+      const extractRes = await $fetch("/api/gemini/process-files/extract", {
+        method: "POST",
+        body: { paths: response.paths },
+      })
+        .then((response) => {
+          console.log("Files extracted successfully:", response);
+          useToastify("Files extracted successfully"); // Correctly closed
+        })
+        .catch((error) => {
+          console.error("Error extracting files:", error);
+          useToastify("Error extracting files"); // Correctly closed
+        });
     })
     .catch((error) => {
       console.error("Error uploading files:", error);
+      uploading.value = false;
+      useToastify("Error uploading files");
+    })
+    .finally(() => {
+      uploading.value = false;
+      useToastify("Files uploaded successfully");
     });
 }
 </script>
@@ -84,10 +96,12 @@ function uploadFiles() {
     </div>
     <button
       v-if="files.length > 0"
-      @click="uploadFiles"
+      @click.prevent="uploadFiles"
+      :disabled="uploading"
       class="mt-4 w-2/3 md:w-1/2 border border-black rounded hover:bg-black hover:text-white font-gowun font-bold"
     >
-      Upload
+      <span v-if="!uploading">Upload</span>
+      <span v-else>Uploading...</span>
     </button>
   </div>
 </template>
