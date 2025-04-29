@@ -1,3 +1,8 @@
+<!-- insert logo here -->
+<div align="center">
+<img src="./assets/logo-transparent.svg"  />
+</div>
+
 # Setup
 
 1. Set terminal to repository root

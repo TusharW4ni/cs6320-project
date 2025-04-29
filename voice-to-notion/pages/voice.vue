@@ -114,7 +114,7 @@ function handleRecording() {
 <template>
   <Navbar />
   <div
-    class="flex flex-col items-center justify-center w-full h-[calc(100vh-10rem)] md:h-[calc(100vh-5rem)] relative"
+    class="flex flex-col items-center justify-center w-full h-[calc(100vh-15rem)] md:h-[calc(100vh-10rem)] relative"
   >
     <button
       @click="handleRecording"
