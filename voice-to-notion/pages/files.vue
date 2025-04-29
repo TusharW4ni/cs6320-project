@@ -95,6 +95,21 @@ async function uploadFiles() {
           },
         });
         console.log("Courses database created successfully:", res);
+        dbId = res.id;
+        try {
+          const createCourses = await $fetch("/api/ntn/database/put/courses", {
+            method: "POST",
+            body: {
+              apiKey: ntnApiKey.value,
+              dbId,
+              courses: extractResponse.summaries,
+            },
+          });
+          console.log("Courses created successfully:", createCourses);
+          useToastify("Courses created successfully");
+        } catch (e) {
+          console.error("Error creating courses:", e);
+        }
       } catch (e) {
         console.error("Error creating courses database:", e);
       }
@@ -158,7 +173,7 @@ async function uploadFiles() {
       <span v-if="uploading && !extracting">Uploading...</span>
       <span v-if="!uploading && extracting">Extracting...</span>
     </button>
-    <div v-if="Object.keys(summaries).length > 0" class="mt-4 w-2/3 md:w-1/2">
+    <!-- <div v-if="Object.keys(summaries).length > 0" class="mt-4 w-2/3 md:w-1/2">
       <h2 class="font-bold text-lg mb-2">Summaries</h2>
       <ul>
         <li
@@ -170,6 +185,6 @@ async function uploadFiles() {
           <pre class="text-sm whitespace-pre-wrap">{{ summary }}</pre>
         </li>
       </ul>
-    </div>
+    </div> -->
   </div>
 </template>
