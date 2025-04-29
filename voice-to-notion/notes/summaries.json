@@ -1,49 +1,4 @@
 {
-  "converted1745871938893.pdf": {
-    "class_location": "ECSS2.410",
-    "course_name": "Automata Theory",
-    "course_number": "CS4384.001",
-    "course_section_number": " -",
-    "course_timing": "TR 10:00am - 11:15am",
-    "exam_dates": "Midterm 1: March 11th, Midterm 2: April 15th, Final Exam: May 8th",
-    "exam_format": "- ",
-    "professor_email": "chalam@utdallas.edu",
-    "professor_name": "Dr. Bhadrachalam Chitturi",
-    "professor_office_hours": "Wednesday: 1:30pm-2:30pm.",
-    "professor_office_location": "ECSN 3.604",
-    "required_textbooks": "Sipser, M.: \"Introduction to the Theory of Computation\", Cengage Learning, (3rd edition) 2013.",
-    "weightage": "Assignments: 10%. Midterm 1: 40%. Midterm 2: 30%. Final Exam: 20%."
-  },
-  "Syllabus Spring 2025.pdf": {
-    "class_location": "ECSW 1.315",
-    "course_name": "Natural Language Processing",
-    "course_number": "CS 6320",
-    "course_section_number": "- ",
-    "course_timing": "TuTh 2:30PM - 3:45PM",
-    "exam_dates": "03/13/25 - Midterm",
-    "exam_format": "- ",
-    "professor_email": "txe110230@utdallas.edu",
-    "professor_name": "Dr. Tatiana Erekhinskaya",
-    "professor_office_hours": "Th 3:45 – 4:45 pm and by appointment",
-    "professor_office_location": "ECSN 3.610",
-    "required_textbooks": "Speech and Language Processing: An Introduction to Natural Language Processing, Computational Linguistics, and Speech Recognition, 3rd Edition by D. Jurafsky and J. Martin, Prentice Hall",
-    "weightage": "Midterm 25% Homework 15%; Project 35%; Final Exam 25%;"
-  },
-  "Syllabus-CS6353-Spring-2025.pdf": {
-    "class_location": "ECSS 4.206",
-    "course_name": "Compiler Construction",
-    "course_number": "CS 6353",
-    "course_section_number": "001",
-    "course_timing": "Mon & Wed 10:00am-11:15am",
-    "exam_dates": "Wed, Feb 24\nExam #1 (tentative), Mon, Mar 31\nExam #2 (tentative), Wed, May 7\nExam #3",
-    "exam_format": "- ",
-    "professor_email": "swei@utdallas.edu",
-    "professor_name": "Shiyi Wei",
-    "professor_office_hours": "Wednesday 1:00pm-2:00pm",
-    "professor_office_location": "ECSS 4.206",
-    "required_textbooks": "Compilers: Principles, Techniques, and Tools (2nd Edition), by Aho, Lam, Sethi, and Ullman, Addison Wesley.",
-    "weightage": "Attendance & Homework 10%, Project 45%, Exam #1 15%, Exam #2 15%, Exam #3 15%"
-  },
   "Syllabus-long.pdf": {
     "class_location": "GR 3.420",
     "course_name": "Artificial Intelligence",
@@ -57,6 +12,6 @@
     "professor_office_hours": "Tuesday, 6:45-7:15, in GR 2.302\nThursday, 6:45-7:15, in GR 2.302",
     "professor_office_location": "ECSS 3.602",
     "required_textbooks": "S. Russell and P. Norvig. Artificial Intelligence, A Modern Approach.\nP. Winston. Artificial Intelligence.",
-    "weightage": "Homework: 8%.\nQuizzes: 12%.\nProjects: 30%.\nTest1: 25%\nTest2: 25%"
+    "weightage": "Homework: 8%\nQuizzes: 12%\nProjects: 30%\nTest1: 25%\nTest2: 25%"
   }
 }

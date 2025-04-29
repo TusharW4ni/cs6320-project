@@ -54,7 +54,7 @@ const handleSubmit = (event: Event) => {
                   <input
                     v-model="apiKey"
                     type="text"
-                    class="border border-gray-300 rounded p-1 w-full focus:bg-black focus:text-white"
+                    class="selection:bg-gray-500 border border-gray-300 rounded p-1 w-full focus:bg-black focus:text-white"
                     placeholder="Enter your API key"
                   />
                   <router-link
@@ -72,7 +72,7 @@ const handleSubmit = (event: Event) => {
                   <input
                     v-model="parentPageTitle"
                     type="text"
-                    class="border border-gray-300 rounded p-1 w-full focus:bg-black focus:text-white"
+                    class="selection:bg-gray-500 border border-gray-300 rounded p-1 w-full focus:bg-black focus:text-white"
                     placeholder="Enter the title of the page you connected to."
                   />
                 </td>

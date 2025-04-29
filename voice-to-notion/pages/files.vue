@@ -3,6 +3,28 @@ const files = ref<File[]>([]);
 const uploading = ref(false);
 const extracting = ref(false);
 const summaries = ref<Record<string, any>>({});
+const ntnApiKey = ref<string | null>(null);
+const parentPageId = ref<string | null>(null);
+
+onMounted(async () => {
+  ntnApiKey.value = localStorage.getItem("apiKey");
+  const parentPageTitle = localStorage.getItem("parentPageTitle");
+  try {
+    const res = await $fetch("/api/ntn/pages/get", {
+      method: "POST",
+      body: {
+        apiKey: ntnApiKey.value,
+      },
+    });
+    res.forEach((page: any) => {
+      if (page.properties.title?.title[0].text.content === parentPageTitle) {
+        parentPageId.value = page.id;
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching Notion pages:", error);
+  }
+});
 
 function handleFileUpload(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -45,15 +67,48 @@ async function uploadFiles() {
     });
     console.log("Files extracted successfully:", extractResponse);
     summaries.value = extractResponse.summaries;
-
     useToastify("Files extracted successfully");
-    files.value = []; // Clear the files after successful extraction
+    let dbId;
+    const queryNtnDB = await $fetch("/api/ntn/database/get", {
+      method: "POST",
+      body: {
+        apiKey: ntnApiKey.value,
+        query: "courses",
+      },
+    }).then((res) => {
+      // console.log({ res: res.results[0].id });
+      // if (res.results.length === 0) {
+      //   return;
+      // }
+      dbId = res.results[0]?.id;
+    });
+
+    // const dbId = queryNtnDB[0].id;
+
+    if (!dbId) {
+      try {
+        const res = await $fetch("/api/ntn/database/post/courses", {
+          method: "POST",
+          body: {
+            apiKey: ntnApiKey.value,
+            parentPageId: parentPageId.value,
+          },
+        });
+        console.log("Courses database created successfully:", res);
+      } catch (e) {
+        console.error("Error creating courses database:", e);
+      }
+    } else {
+      console.log("Courses database already exists:", dbId);
+    }
+
+    files.value = [];
   } catch (error) {
     console.error("Error during upload or extraction:", error);
     useToastify("An error occurred during upload or extraction");
   } finally {
     uploading.value = false;
-    extracting.value = false; // Ensure both states are reset
+    extracting.value = false;
   }
 }
 </script>
