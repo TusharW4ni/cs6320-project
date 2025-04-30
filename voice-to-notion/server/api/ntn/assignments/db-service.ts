@@ -1,10 +1,6 @@
-// server/lib/notion.ts
 import { Client } from "@notionhq/client";
 
-/**
- * Returns a Notion client authenticated with the provided token or
- * the global NOTION_API_KEY environment variable.
- */
+// Returns a Notion client authenticated or NOTION_API_KEY environment variable.
 function getNotionClient(token?: string) {
   const key = token ?? process.env.NOTION_API_KEY;
   if (!key) {
@@ -15,26 +11,36 @@ function getNotionClient(token?: string) {
   return new Client({ auth: key });
 }
 
-// Cache to avoid repeated database operations per server run
 let cachedDbId: string | undefined;
 
 /**
- * Ensures the "Assignments and Exams" database exists under a given parent page.
- * - Reorders properties if the DB already exists.
- * - Otherwise creates a new DB with the desired column order.
- * @param notionKey            Integration token (overrides env var)
- * @param parentPageIdentifier Page title or page ID (UUID)
- * @returns                   Notion database ID
+ * Ensures the database exists
+ * Reorders properties if the DB already exists
+ * Else creates a new DB
+ * @param notionKey            
+ * @param parentPageIdentifier 
+ * @returns
  */
+
 export async function ensureAssignmentsDatabase(
   notionKey: string | undefined,
   parentPageIdentifier: string
 ): Promise<string> {
+  const notion = getNotionClient(notionKey);
+
   if (cachedDbId) {
-    return cachedDbId;
+    try {
+      await notion.databases.retrieve({ database_id: cachedDbId });
+      return cachedDbId;
+    } catch (e: any) {
+      console.warn(
+        `Cached DB ID ${cachedDbId} no longer exists — clearing cache`
+      );
+      cachedDbId = undefined;
+      delete process.env.ASSIGNMENTS_DB_ID;
+    }
   }
 
-  const notion = getNotionClient(notionKey);
   let parentPageId: string;
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,21 +60,20 @@ export async function ensureAssignmentsDatabase(
     parentPageId = (searchRes.results[0] as any).id;
   }
 
-  // Look for existing "Assignments and Exams" database
+  // Look for existing database
   const dbSearch = await notion.search({
     query: "Assignments and Exams",
     filter: { property: "object", value: "database" }
   });
 
-  const existing = (dbSearch.results as any[]).find(item => {
-    const titleArr = (item as any).title;
-    return (
-      Array.isArray(titleArr) &&
-      titleArr.some((t: any) => t.plain_text === "Assignments and Exams")
-    );
-  });
+  const existing = (dbSearch.results as any[])
+  .filter(item => !(item as any).archived)
+  .find(item => {
+    const titleArr = (item as any).title
+    return Array.isArray(titleArr) && titleArr.some((t: any) => t.plain_text === "Assignments and Exams")
+  })
 
-  // Desired property order/schema
+  // DB order/schema
   const desiredProps = {
     Status:       { checkbox: {} },
     Course:       { select:      { options: [] } },
@@ -78,22 +83,22 @@ export async function ensureAssignmentsDatabase(
       formula: {
         expression: `
         if(
-        ceil(dateBetween(prop("Due Date"), now(), "hours") / 24) == 1,
-        "💛 Due Tomorrow",
-        if(
-            ceil(dateBetween(prop("Due Date"), now(), "hours") / 24) > 0,
-            "💚 " + format(ceil(dateBetween(prop("Due Date"), now(), "hours") / 24)) + " days left",
-            if(
-            ceil(dateBetween(prop("Due Date"), now(), "hours") / 24) < 0,
-            "🚨 " + format(abs(dateBetween(prop("Due Date"), now(), "days"))) + " days overdue!",
-            "❤️‍🔥 Due Today"
-            )
-        )
+          ceil(dateBetween(prop("Due Date"), now(), "hours") / 24) == 1,
+          "💛 Due Tomorrow",
+          if(
+              ceil(dateBetween(prop("Due Date"), now(), "hours") / 24) > 0,
+              "💚 " + format(ceil(dateBetween(prop("Due Date"), now(), "hours") / 24)) + " days left",
+              if(
+                ceil(dateBetween(prop("Due Date"), now(), "hours") / 24) < 0,
+                "🚨 " + format(abs(dateBetween(prop("Due Date"), now(), "days"))) + " days overdue!",
+                "❤️‍🔥 Due Today"
+              )
+          )
         )
         `.trim()
       }
     },
-    Task:         { multi_select: { options: [] } }
+    Task: { multi_select: { options: [] } }
   };
 
   if (existing) {
@@ -107,7 +112,7 @@ export async function ensureAssignmentsDatabase(
     return dbId;
   }
 
-  // Create new DB with desired column order
+  // Create new DB with respective column orders 
   const resp = await notion.databases.create({
     parent: { page_id: parentPageId },
     title: [{ type: "text", text: { content: "Assignments and Exams" } }],
@@ -118,9 +123,8 @@ export async function ensureAssignmentsDatabase(
   return resp.id;
 }
 
-/**
- * Adds a new assignment/exam entry to the specified database.
- */
+// Adds a new assignment/exam entry to the specified database.
+// "Days Left" column is a auto calculated by Notion
 export async function addAssignment(
   databaseId: string,
   data: { course: string; title: string; dueDate: string; taskTags: string[] },
@@ -134,7 +138,6 @@ export async function addAssignment(
       Course:      { select:     { name: data.course } },
       Name:        { title:      [{ text: { content: data.title } }] },
       "Due Date":  { date:       { start: data.dueDate } },
-      // "Days Left" is a formula, auto-calculated in the DB
       Task:        { multi_select: data.taskTags.map(name => ({ name })) }
     }
   });

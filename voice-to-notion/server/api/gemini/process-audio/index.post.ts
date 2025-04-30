@@ -1,15 +1,14 @@
-// server/api/gemini/process-audio/index.post.ts
 import { defineEventHandler, readMultipartFormData, setResponseStatus } from 'h3';
 import { GoogleGenAI } from '@google/genai';
-import { createNewPageFn, createAssignmentFn } from '~/server/lib/notion-tools';
-import { ensureAssignmentsDatabase, addAssignment } from '~/server/lib/notion';
+import { createNewPageFn, createAssignmentFn } from '~/server/api/ntn/assignments/ai-functions';
+import { ensureAssignmentsDatabase, addAssignment } from '~/server/api/ntn/assignments/db-service';
 
 export default defineEventHandler(async (event) => {
-  console.log('🚀 [process-audio] start');
+  console.log('Process Audio start');
 
   const { GEMINI_KEY } = useRuntimeConfig();
   if (!GEMINI_KEY) {
-    console.error('❌ [process-audio] GEMINI_KEY not set');
+    console.error('GEMINI_KEY not set');
     setResponseStatus(event, 500);
     return { error: 'Gemini API key not configured.' };
   }
@@ -18,7 +17,7 @@ export default defineEventHandler(async (event) => {
   try {
     formData = await readMultipartFormData(event);
   } catch (err: any) {
-    console.error('❌ [process-audio] readMultipartFormData failed:', err);
+    console.error('readMultipartFormData failed:', err);
     setResponseStatus(event, 400);
     return { error: 'Invalid multipart form data.' };
   }
@@ -28,17 +27,17 @@ export default defineEventHandler(async (event) => {
   const parentTitleEntry = formData.find((f: any) => f.name === 'parentPageTitle');
 
   if (!fileEntry || !fileEntry.data) {
-    console.error('❌ [process-audio] Audio file missing');
+    console.error('file missing');
     setResponseStatus(event, 400);
     return { error: 'Audio file not found.' };
   }
   if (!ntnApiKeyEntry || !ntnApiKeyEntry.data) {
-    console.error('❌ [process-audio] Notion API key missing');
+    console.error('Notion API key missing');
     setResponseStatus(event, 400);
     return { error: 'Notion API key not provided.' };
   }
   if (!parentTitleEntry || !parentTitleEntry.data) {
-    console.error('❌ [process-audio] Parent page title missing');
+    console.error('Parent page title missing');
     setResponseStatus(event, 400);
     return { error: 'Parent page title not provided.' };
   }
@@ -48,7 +47,7 @@ export default defineEventHandler(async (event) => {
   const audioBuffer = fileEntry.data;
   const mimeType = fileEntry.type || 'audio/wav';
 
-  console.log(`📥 [process-audio] Received ${fileEntry.filename} (${mimeType}, ${audioBuffer.length} bytes)`);
+  console.log(`Received ${fileEntry.filename} (${mimeType}, ${audioBuffer.length} bytes)`);
 
   const audioBase64 = audioBuffer.toString('base64');
 
@@ -63,9 +62,9 @@ export default defineEventHandler(async (event) => {
       throw new Error(`Page titled "${parentPageTitle}" not found`);
     }
     parentPageId = pages[0].id;
-    console.log('ℹ️ [process-audio] resolved parentPageId:', parentPageId);
+    console.log('resolved parentPageId:', parentPageId);
   } catch (err: any) {
-    console.error('❌ [process-audio] lookup parentPageId failed:', err);
+    console.error('lookup parentPageId failed:', err);
     setResponseStatus(event, 500);
     return { error: `Failed to find parent page: ${err.message}` };
   }
@@ -75,12 +74,12 @@ export default defineEventHandler(async (event) => {
   const tools = [
     { functionDeclarations: [createNewPageFn, createAssignmentFn] }
   ];
-  console.log('🛠️ [process-audio] tools:', tools[0].functionDeclarations.map(f => f.name));
+  console.log('tools:', tools[0].functionDeclarations.map(f => f.name));
 
   // Call Gemini with audio data
   let result: any;
   try {
-    console.log('📤 [process-audio] calling Gemini...');
+    console.log('calling Gemini...');
     result = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: [
@@ -89,64 +88,64 @@ export default defineEventHandler(async (event) => {
       ],
       config: { tools }
     });
-    console.log('📥 [process-audio] raw response:', JSON.stringify(result, null, 2));
+    console.log('raw response:', JSON.stringify(result, null, 2));
   } catch (err: any) {
-    console.error('❌ [process-audio] Gemini error:', err);
+    console.error('Gemini error:', err);
     setResponseStatus(event, 500);
     return { error: 'Gemini API call failed.', details: err.message };
   }
 
-  console.log('ℹ️ [process-audio] functionCalls:', result.functionCalls);
+  console.log('functionCalls:', result.functionCalls);
 
   // Execute any function calls
   for (const call of result.functionCalls || []) {
-    console.log(`🔔 [process-audio] call.name=${call.name}`, call.args);
+    console.log(`call.name=${call.name}`, call.args);
 
     if (call.name === 'createNewPage') {
       const title = call.args?.title || 'Untitled Page';
       const content = call.args?.content || 'No content provided';
-      console.log('📄 [process-audio] invoking createNewPage', { title, content });
+      console.log('invoking createNewPage', { title, content });
       try {
         await $fetch('/api/ntn/pages/post', {
           method: 'POST',
           body: { ntnApiKey, parentPageTitle, title, content }
         });
-        console.log('✅ [process-audio] createNewPage succeeded');
+        console.log('createNewPage succeeded');
       } catch (err: any) {
-        console.error('❌ [process-audio] createNewPage failed:', err);
+        console.error('createNewPage failed:', err);
       }
 
     } else if (call.name === 'createAssignment') {
       const { course, title, dueDate, taskTags } = call.args as any;
-      console.log('🏷️ [process-audio] invoking createAssignment', { course, title, dueDate, taskTags });
+      console.log('invoking createAssignment', { course, title, dueDate, taskTags });
       try {
         const dbId = await ensureAssignmentsDatabase(ntnApiKey, parentPageId);
         await addAssignment(dbId, { course, title, dueDate, taskTags }, ntnApiKey);
-        console.log('✅ [process-audio] createAssignment succeeded');
+        console.log('createAssignment succeeded');
       } catch (err: any) {
-        console.error('❌ [process-audio] createAssignment failed:', err);
+        console.error('createAssignment failed:', err);
       }
 
     } else {
-      console.warn('⚠️ [process-audio] unknown function call', call.name);
+      console.warn('unknown function call', call.name);
     }
   }
 
   // Fallback: default to page creation if no calls
   if (!result.functionCalls?.length) {
-    console.log('📄 [process-audio] no function call — default createNewPage');
+    console.log('no function call — default createNewPage');
     try {
       await $fetch('/api/ntn/pages/post', {
         method: 'POST',
         body: { ntnApiKey, parentPageTitle, title: 'Untitled Page', content: 'No content provided' }
       });
-      console.log('✅ [process-audio] default createNewPage succeeded');
+      console.log('default createNewPage succeeded');
     } catch (err: any) {
-      console.error('❌ [process-audio] default createNewPage failed:', err);
+      console.error('default createNewPage failed:', err);
     }
   }
 
   setResponseStatus(event, 200);
-  console.log('🏁 [process-audio] end');
+  console.log('Process Audio end');
   return { message: 'Audio processed successfully' };
 });

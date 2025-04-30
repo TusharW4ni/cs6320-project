@@ -2,12 +2,12 @@ import { FunctionDeclaration, Type } from "@google/genai";
 
 export const createNewPageFn: FunctionDeclaration = {
   name: "createNewPage",
-  description: "Create a free-form page in Notion",
+  description: "Create a page in Notion",
   parameters: {
     type: Type.OBJECT,
     properties: {
       title:   { type: Type.STRING, description: "Title of the new page" },
-      content: { type: Type.STRING, description: "Markdown content of the page" }
+      content: { type: Type.STRING, description: "Content of the page" }
     },
     required: ["title","content"]
   }

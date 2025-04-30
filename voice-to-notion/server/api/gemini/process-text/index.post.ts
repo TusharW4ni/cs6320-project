@@ -1,15 +1,14 @@
-// server/api/gemini/process-text/index.post.ts
 import { defineEventHandler, readBody, setResponseStatus } from "h3";
 import { GoogleGenAI } from "@google/genai";
-import { createNewPageFn, createAssignmentFn } from "~/server/lib/notion-tools";
-import { ensureAssignmentsDatabase, addAssignment } from "~/server/lib/notion";
+import { createNewPageFn, createAssignmentFn } from "~/server/api/ntn/assignments/ai-functions";
+import { ensureAssignmentsDatabase, addAssignment } from "~/server/api/ntn/assignments/db-service";
 
 export default defineEventHandler(async (event) => {
-  console.log("🚀 [process-text] start");
+  console.log("Process Text start");
 
   const { GEMINI_KEY } = useRuntimeConfig();
   if (!GEMINI_KEY) {
-    console.error("❌ [process-text] GEMINI_KEY not set");
+    console.error("GEMINI_KEY not set");
     setResponseStatus(event, 500);
     return { error: "Gemini API key not configured." };
   }
@@ -17,16 +16,16 @@ export default defineEventHandler(async (event) => {
   let body: any;
   try {
     body = await readBody(event);
-    console.log("📥 [process-text] body:", body);
+    console.log("body:", body);
   } catch (e: any) {
-    console.error("❌ [process-text] readBody failed:", e);
+    console.error("readBody failed:", e);
     setResponseStatus(event, 400);
     return { error: "Invalid request body." };
   }
 
   const { textPrompt, ntnApiKey, parentPageTitle } = body;
   if (!textPrompt || !ntnApiKey || !parentPageTitle) {
-    console.error("❌ [process-text] Missing fields:", { textPrompt, ntnApiKey, parentPageTitle });
+    console.error("Missing fields:", { textPrompt, ntnApiKey, parentPageTitle });
     setResponseStatus(event, 400);
     return { error: "Missing textPrompt, ntnApiKey or parentPageTitle." };
   }
@@ -42,22 +41,22 @@ export default defineEventHandler(async (event) => {
       throw new Error(`Page titled "${parentPageTitle}" not found`);
     }
     parentPageId = pages[0].id;
-    console.log('ℹ️ [process-text] resolved parentPageId:', parentPageId);
+    console.log('resolved parentPageId:', parentPageId);
   } catch (e: any) {
-    console.error('❌ [process-text] lookup parentPageId failed:', e);
+    console.error('lookup parentPageId failed:', e);
     setResponseStatus(event, 500);
     return { error: `Failed to find parent page: ${e.message}` };
   }
 
-  console.log(`✉️ [process-text] prompt: "${textPrompt}"`);
+  console.log(`prompt: "${textPrompt}"`);
 
   const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   const tools = [{ functionDeclarations: [createNewPageFn, createAssignmentFn] }];
-  console.log("🛠️ [process-text] tools:", tools[0].functionDeclarations.map(f => f.name));
+  console.log("tools:", tools[0].functionDeclarations.map(f => f.name));
 
   let result: any;
   try {
-    console.log("📤 [process-text] calling Gemini…");
+    console.log("calling Gemini…");
     result = await ai.models.generateContent({
       model: "gemini-2.0-flash",
       contents: [
@@ -66,64 +65,64 @@ export default defineEventHandler(async (event) => {
       ],
       config: { tools }
     });
-    console.log("📥 [process-text] raw response:", JSON.stringify(result, null, 2));
+    console.log("raw response:", JSON.stringify(result, null, 2));
   } catch (e: any) {
-    console.error("❌ [process-text] Gemini error:", e);
+    console.error("Gemini error:", e);
     setResponseStatus(event, 500);
     return { error: "Gemini API call failed.", details: e.message };
   }
 
-  console.log("ℹ️ [process-text] functionCalls:", result.functionCalls);
+  console.log("functionCalls:", result.functionCalls);
 
   // Handle function calls
   for (const call of result.functionCalls || []) {
-    console.log(`🔔 [process-text] call.name=${call.name}`, call.args);
+    console.log(`call.name=${call.name}`, call.args);
 
     if (call.name === "createNewPage") {
       const title = call.args?.title || "Untitled Page";
       const content = call.args?.content || "No content provided";
-      console.log("📄 [process-text] invoking createNewPage…", { title, content });
+      console.log("invoking createNewPage…", { title, content });
       try {
         await $fetch("/api/ntn/pages/post", {
           method: "POST",
           body: { ntnApiKey, parentPageTitle, title, content }
         });
-        console.log("✅ [process-text] createNewPage succeeded");
+        console.log("createNewPage succeeded");
       } catch (e: any) {
-        console.error("❌ [process-text] createNewPage failed:", e);
+        console.error("createNewPage failed:", e);
       }
 
     } else if (call.name === "createAssignment") {
       const { course, title, dueDate, taskTags } = call.args as any;
-      console.log("🏷️ [process-text] invoking createAssignment…", { course, title, dueDate, taskTags });
+      console.log("invoking createAssignment…", { course, title, dueDate, taskTags });
       try {
         const dbId = await ensureAssignmentsDatabase(ntnApiKey, parentPageId);
         await addAssignment(dbId, { course, title, dueDate, taskTags }, ntnApiKey);
-        console.log("✅ [process-text] createAssignment succeeded");
+        console.log("createAssignment succeeded");
       } catch (e: any) {
-        console.error("❌ [process-text] createAssignment failed:", e);
+        console.error("createAssignment failed:", e);
       }
 
     } else {
-      console.warn("⚠️ [process-text] unknown function call:", call.name);
+      console.warn("unknown function call:", call.name);
     }
   }
 
   // Fallback: if no functionCalls, default to page creation
   if (!result.functionCalls?.length) {
-    console.log("📄 [process-text] no function call — default createNewPage");
+    console.log("No function call —> default to createNewPage");
     try {
       await $fetch("/api/ntn/pages/post", {
         method: "POST",
         body: { ntnApiKey, parentPageTitle, title: "Untitled Page", content: "No content provided" }
       });
-      console.log("✅ [process-text] default createNewPage succeeded");
+      console.log("createNewPage succeeded");
     } catch (e: any) {
-      console.error("❌ [process-text] default createNewPage failed:", e);
+      console.error("createNewPage failed:", e);
     }
   }
 
   setResponseStatus(event, 200);
-  console.log("🏁 [process-text] end");
+  console.log("Process Text end");
   return { message: "Done" };
 });
