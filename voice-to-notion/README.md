@@ -1,6 +1,6 @@
 <!-- insert logo here -->
 <div align="center">
-<img src="./assets/logo-transparent.svg"  />
+<img src="./assets/logo-background.svg"  />
 </div>
 
 # Setup
