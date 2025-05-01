@@ -10,6 +10,8 @@ const isRecording = ref(false);
 const user = ref<any>(null);
 const avatar_url = ref<string>("");
 const textPrompt = ref<string>("");
+const isAudioProcessing = ref(false);
+const isTextProcessing = ref(false);
 
 onMounted(async () => {
   apiKey.value = localStorage.getItem("apiKey") || "";
@@ -85,6 +87,7 @@ function stopRecording() {
 }
 
 async function sendToServer(file: File) {
+  isAudioProcessing.value = true;
   const formData = new FormData();
   formData.append("file", file);
   formData.append("ntnApiKey", apiKey.value);
@@ -100,6 +103,8 @@ async function sendToServer(file: File) {
   } catch (err) {
     console.error("err", err);
     useToastify("Audio processing failed");
+  } finally {
+    isAudioProcessing.value = false;
   }
 }
 
@@ -116,7 +121,7 @@ async function sendTextPrompt() {
     useToastify("Text prompt cannot be empty");
     return;
   }
-
+  isTextProcessing.value = true;
   try {
     const res = await $fetch("/api/gemini/process-text", {
       method: "POST",
@@ -134,6 +139,7 @@ async function sendTextPrompt() {
   } finally {
     // Clear the text input after sending
     textPrompt.value = "";
+    isTextProcessing.value = false;
   }
 }
 
@@ -154,36 +160,57 @@ function handleKeyPress(event: KeyboardEvent) {
       @click="handleRecording"
       class="relative flex items-center justify-center ripple-container"
       :class="{ recording: isRecording }"
+      :disabled="isAudioProcessing"
     >
-      <img
-        v-if="avatar_url"
-        :src="avatar_url"
-        alt="User Profile Picture"
-        class="w-36 md:w-80 rounded-full border-4 border-gray-300"
-      />
-      <div
-        v-else
-        class="w-36 h-36 rounded-full border-4 border-gray-300 flex items-center justify-center"
-      >
+      <template v-if="isAudioProcessing">
+        <!-- Spinner SVG for audio processing -->
         <svg
+          class="animate-spin w-36 md:w-80 h-36 md:h-80 text-gray-400"
           xmlns="http://www.w3.org/2000/svg"
-          fill="none"
+          width="80"
+          height="80"
           viewBox="0 0 24 24"
-          strokeWidth="{1.5}"
-          stroke="currentColor"
-          class="size-24 text-gray-500"
         >
           <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+            d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
           />
         </svg>
-      </div>
+      </template>
+      <template v-else>
+        <img
+          v-if="avatar_url"
+          :src="avatar_url"
+          alt="User Profile Picture"
+          class="w-36 md:w-80 rounded-full border-4 border-gray-300"
+        />
+        <div
+          v-else
+          class="w-36 h-36 rounded-full border-4 border-gray-300 flex items-center justify-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="{1.5}"
+            stroke="currentColor"
+            class="size-24 text-gray-500"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1,12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+            />
+          </svg>
+        </div>
+      </template>
     </button>
 
+    <div class="my-8 flex flex-col items-center">
+      <span class="text-gray-400 text-lg font-semibold select-none">or</span>
+    </div>
+
     <!-- New text prompt input -->
-    <div class="mt-24 w-full max-w-md">
+    <div class="w-full max-w-md">
       <div class="flex shadow-sm rounded-md overflow-hidden">
         <!-- Text input grows to fill -->
         <input
@@ -191,23 +218,45 @@ function handleKeyPress(event: KeyboardEvent) {
           @keydown="handleKeyPress"
           type="text"
           placeholder="Enter your text prompt"
-          class="flex-1 px-4 py-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          class="flex-1 px-2 md:px-4 py-3 border border-gray-300 focus:outline-none focus:bg-black focus:text-white focus:border-black"
+          :disabled="isTextProcessing"
         />
-        <!-- Arrow button -->
+        <!-- Arrow button or spinner -->
         <button
           @click="sendTextPrompt"
-          class="flex-none bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors duration-150 px-4 flex items-center justify-center"
+          class="group flex-none border border-gray-300 hover:bg-black hover:border hover:border-black hover:text-white transition-colors duration-150 px-4 flex items-center justify-center"
+          :disabled="isTextProcessing"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-6 h-6 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-          </svg>
+          <template v-if="isTextProcessing">
+            <!-- Spinner SVG for text processing -->
+            <svg
+              class="animate-spin w-6 h-6 text-black group-hover:text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
+              />
+            </svg>
+          </template>
+          <template v-else>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-6 h-6 text-black group-hover:text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M14 5l7 7m0 0l-7 7m7-7H3"
+              />
+            </svg>
+          </template>
         </button>
       </div>
     </div>
