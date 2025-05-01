@@ -17,8 +17,8 @@ let cachedDbId: string | undefined;
  * Ensures the database exists
  * Reorders properties if the DB already exists
  * Else creates a new DB
- * @param notionKey            
- * @param parentPageIdentifier 
+ * @param notionKey
+ * @param parentPageIdentifier
  * @returns
  */
 
@@ -50,7 +50,7 @@ export async function ensureAssignmentsDatabase(
   } else {
     const searchRes = await notion.search({
       query: parentPageIdentifier,
-      filter: { property: "object", value: "page" }
+      filter: { property: "object", value: "page" },
     });
     if (!searchRes.results.length) {
       throw new Error(
@@ -63,23 +63,26 @@ export async function ensureAssignmentsDatabase(
   // Look for existing database
   const dbSearch = await notion.search({
     query: "Assignments and Exams",
-    filter: { property: "object", value: "database" }
+    filter: { property: "object", value: "database" },
   });
 
   const existing = (dbSearch.results as any[])
-  .filter(item => !(item as any).archived)
-  .find(item => {
-    const titleArr = (item as any).title
-    return Array.isArray(titleArr) && titleArr.some((t: any) => t.plain_text === "Assignments and Exams")
-  })
+    .filter((item) => !(item as any).archived)
+    .find((item) => {
+      const titleArr = (item as any).title;
+      return (
+        Array.isArray(titleArr) &&
+        titleArr.some((t: any) => t.plain_text === "Assignments and Exams")
+      );
+    });
 
   // DB order/schema
   const desiredProps = {
-    Status:       { checkbox: {} },
-    Course:       { select:      { options: [] } },
-    Name:         { title:       {} },
-    "Due Date":   { date:        {} },
-    "Days Left":  {
+    Status: { checkbox: {} },
+    Course: { select: { options: [] } },
+    Name: { title: {} },
+    "Due Date": { date: {} },
+    "Days Left": {
       formula: {
         expression: `
         if(
@@ -95,10 +98,10 @@ export async function ensureAssignmentsDatabase(
               )
           )
         )
-        `.trim()
-      }
+        `.trim(),
+      },
     },
-    Task: { multi_select: { options: [] } }
+    Task: { multi_select: { options: [] } },
   };
 
   if (existing) {
@@ -106,17 +109,17 @@ export async function ensureAssignmentsDatabase(
     // Reorder properties on existing DB
     await notion.databases.update({
       database_id: dbId,
-      properties: desiredProps
+      properties: desiredProps,
     });
     cachedDbId = dbId;
     return dbId;
   }
 
-  // Create new DB with respective column orders 
+  // Create new DB with respective column orders
   const resp = await notion.databases.create({
     parent: { page_id: parentPageId },
     title: [{ type: "text", text: { content: "Assignments and Exams" } }],
-    properties: desiredProps
+    properties: desiredProps,
   });
 
   cachedDbId = resp.id;
@@ -125,7 +128,7 @@ export async function ensureAssignmentsDatabase(
 
 // Adds a new assignment/exam entry to the specified database.
 // "Days Left" column is a auto calculated by Notion
-export async function addAssignment(
+/*export async function addAssignment(
   databaseId: string,
   data: { course: string; title: string; dueDate: string; taskTags: string[] },
   notionKey: string | undefined
@@ -140,5 +143,29 @@ export async function addAssignment(
       "Due Date":  { date:       { start: data.dueDate } },
       Task:        { multi_select: data.taskTags.map(name => ({ name })) }
     }
+  });
+}*/
+
+export async function addAssignment(
+  databaseId: string,
+  data: { course?: string; title: string; dueDate: string; taskTags: string[] },
+  notionKey: string | undefined
+) {
+  const notion = getNotionClient(notionKey);
+
+  const properties: any = {
+    Status: { checkbox: false },
+    Name: { title: [{ text: { content: data.title } }] },
+    "Due Date": { date: { start: data.dueDate } },
+    Task: { multi_select: data.taskTags.map((name) => ({ name })) },
+  };
+
+  if (data.course && data.course.trim()) {
+    properties.Course = { select: { name: data.course } };
+  }
+
+  return notion.pages.create({
+    parent: { database_id: databaseId },
+    properties,
   });
 }
