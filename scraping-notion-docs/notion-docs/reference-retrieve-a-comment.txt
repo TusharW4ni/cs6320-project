@@ -1,0 +1,73 @@
+Retrieve comments
+GET
+https://api.notion.com/v1/comments
+
+Retrieves a list of un-resolved Comment objects from a page or block.
+
+See Pagination for details about how to use a cursor to iterate through the list.
+
+Errors
+
+Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+📘
+
+Reminder: Turn on integration comment capabilities
+
+Integration capabilities for reading and inserting comments are off by default.
+
+This endpoint requires an integration to have read comment capabilities. Attempting to call this endpoint without read comment capabilities will return an HTTP response with a 403 status code.
+
+For more information on integration capabilities, see the capabilities guide. To update your integration settings, visit the integration dashboard.
+
+QUERY PARAMS
+block_id
+string
+required
+
+Identifier for a Notion block or page
+
+start_cursor
+string
+
+If supplied, this endpoint will return a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results.
+
+page_size
+int32
+
+The number of items from the full list desired in the response. Maximum: 100
+
+HEADERS
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+
+RESPONSES
+200
+
+200
+
+403
+
+403
+
+Updated 2 months ago
+
+Create comment
+Search
+Did this page help you?
+Yes
+No
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const blockId = 'd40e767c-d7af-4b18-a86d-55c61f1e39a4';
+  const response = await notion.comments.list({ block_id: blockId });
+  console.log(response);
+})();

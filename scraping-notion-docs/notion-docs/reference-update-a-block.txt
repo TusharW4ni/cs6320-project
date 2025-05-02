@@ -1,0 +1,191 @@
+Update a block
+PATCH
+https://api.notion.com/v1/blocks/{block_id}
+
+Updates the content for the specified block_id based on the block type. Supported fields based on the block object type (see Block object for available fields and the expected input for each field).
+
+Note: The update replaces the entire value for a given field. If a field is omitted (ex: omitting checked when updating a to_do block), the value will not be changed.
+
+📘
+
+Updating child_page blocks
+
+To update child_page type blocks, use the Update page endpoint. Updating the page's title updates the text displayed in the associated child_page block.
+
+📘
+
+Updating child_database blocks
+
+To update child_database type blocks, use the Update database endpoint. Updating the page's title updates the text displayed in the associated child_database block.
+
+📘
+
+Updating children
+
+A block's children CANNOT be directly updated with this endpoint. Instead use Append block children to add children.
+
+📘
+
+Updating heading blocks
+
+To update the toggle of a heading block, you can include the optional is_toggleable property in the request. Toggle can be added and removed from a heading block. However, you cannot remove toggle from a heading block if it has children. All children MUST be removed before revoking toggle from a heading block.
+
+Success
+
+Returns a 200 HTTP response containing the updated block object on success.
+
+📘
+
+Integration capabilities
+
+This endpoint requires an integration to have update content capabilities. Attempting to call this API without update content capabilities will return an HTTP response with a 403 status code. For more information on integration capabilities, see the capabilities guide.
+
+Errors
+
+Returns a 404 HTTP response if the block doesn't exist, has been archived, or if the integration doesn't have access to the page.
+
+Returns a 400 if the type for the block is incorrect or the input is incorrect for a given field.
+
+Returns a 400 or a 429 HTTP response if the request exceeds the request limits.
+
+Note: Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+PATH PARAMS
+block_id
+string
+required
+
+Identifier for a Notion block
+
+BODY PARAMS
+archived
+boolean
+Defaults to true
+
+Set to true to archive (delete) a block. Set to false to un-archive (restore) a block.
+
+HEADERS
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+
+RESPONSES
+200
+
+200
+Response body
+object
+object
+string
+id
+string
+parent
+object
+type
+string
+page_id
+string
+created_time
+string
+last_edited_time
+string
+created_by
+object
+object
+string
+id
+string
+last_edited_by
+object
+object
+string
+id
+string
+has_children
+boolean
+Defaults to true
+archived
+boolean
+Defaults to true
+type
+string
+heading_2
+object
+rich_text
+array of objects
+object
+type
+string
+text
+object
+content
+string
+link
+string
+annotations
+object
+bold
+boolean
+Defaults to true
+italic
+boolean
+Defaults to true
+strikethrough
+boolean
+Defaults to true
+underline
+boolean
+Defaults to true
+code
+boolean
+Defaults to true
+color
+string
+plain_text
+string
+href
+string
+color
+string
+is_toggleable
+boolean
+Defaults to true
+400
+
+400
+Response body
+object
+Updated 2 months ago
+
+Retrieve block children
+Delete a block
+Did this page help you?
+Yes
+No
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const blockId = '9bc30ad4-9373-46a5-84ab-0a7845ee52e6';
+  const response = await notion.blocks.update({
+	"block_id": blockId,
+	"heading_2": {
+		"rich_text": [
+			{
+				"text": {
+					"content": "Lacinato kale"
+				},
+				"annotations": {
+					"color": "green"
+				}
+			}
+		]
+	}
+});
+  console.log(response);
+})();

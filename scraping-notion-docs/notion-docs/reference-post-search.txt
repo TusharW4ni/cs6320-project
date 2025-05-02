@@ -1,0 +1,41 @@
+Search by title
+POST
+https://api.notion.com/v1/search
+
+Searches all parent or child pages and databases that have been shared with an integration.
+
+Returns all pages or databases, excluding duplicated linked databases, that have titles that include the query param. If no query param is provided, then the response contains all pages or databases that have been shared with the integration. The results adhere to any limitations related to an integration’s capabilities.
+
+To limit the request to search only pages or to search only databases, use the filter param.
+
+Errors
+
+Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+📘
+
+The Search endpoint supports pagination. To learn more about working with paginated responses, see the pagination section of the Notion API Introduction.
+
+🚧
+
+To search a specific database — not all databases shared with the integration — use the Query a database endpoint instead.
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const response = await notion.search({
+    query: 'External tasks',
+    filter: {
+      value: 'database',
+      property: 'object'
+    },
+    sort: {
+      direction: 'ascending',
+      timestamp: 'last_edited_time'
+    },
+  });
+  console.log(response);
+})();

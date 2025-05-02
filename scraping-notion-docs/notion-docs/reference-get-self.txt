@@ -1,0 +1,49 @@
+Retrieve your token's bot user
+GET
+https://api.notion.com/v1/users/me
+
+Retrieves the bot User associated with the API token provided in the authorization header. The bot will have an owner field with information about the person who authorized the integration.
+
+Errors
+
+Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+📘
+
+Integration capabilities
+
+This endpoint is accessible from by integrations with any level of capabilities. The user object returned will adhere to the limitations of the integration's capabilities. For more information on integration capabilities, see the capabilities guide.
+
+HEADERS
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+
+RESPONSES
+200
+
+200
+
+400
+
+400
+
+Updated 2 months ago
+
+Retrieve a user
+Comments
+Did this page help you?
+Yes
+No
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const response = await notion.users.me();
+  console.log(response);
+})();

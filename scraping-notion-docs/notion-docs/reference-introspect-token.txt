@@ -1,0 +1,59 @@
+Introspect token
+POST
+https://api.notion.com/v1/oauth/introspect
+
+Get a token's active status, scope, and issued time.
+
+BODY PARAMS
+token
+string
+required
+
+The access token
+
+HEADERS
+Authorization
+string
+Defaults to Basic $BASE64_ENCODED_ID_AND_SECRET
+RESPONSES
+200
+
+200
+Response body
+object
+active
+boolean
+Defaults to true
+scope
+string
+iat
+integer
+Defaults to 0
+400
+
+400
+Response body
+object
+
+Updated about 2 months ago
+
+Create a token
+Revoke token
+Did this page help you?
+Yes
+No
+
+example:
+const options = {
+  method: 'POST',
+  headers: {
+    accept: 'application/json',
+    Authorization: 'Basic $BASE64_ENCODED_ID_AND_SECRET',
+    'content-type': 'application/json'
+  }
+};
+
+fetch('https://api.notion.com/v1/oauth/introspect', options)
+  .then(res => res.json())
+  .then(res => console.log(res))
+  .catch(err => console.error(err));

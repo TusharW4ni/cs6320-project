@@ -1,0 +1,43 @@
+Retrieve a database
+GET
+https://api.notion.com/v1/databases/{database_id}
+
+Retrieves a database object — information that describes the structure and columns of a database — for a provided database ID. The response adheres to any limits to an integration’s capabilities.
+
+To fetch database rows rather than columns, use the Query a database endpoint.
+
+To find a database ID, navigate to the database URL in your Notion workspace. The ID is the string of characters in the URL that is between the slash following the workspace name (if applicable) and the question mark. The ID is a 32 characters alphanumeric string.
+
+Notion database ID
+
+Refer to the Build your first integration guide for more details.
+
+Errors
+
+Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+Additional resources
+How to share a database with your integration
+Working with databases guide
+📘
+
+Database relations must be shared with your integration
+
+To retrieve database properties from database relations, the related database must be shared with your integration in addition to the database being retrieved. If the related database is not shared, properties based on relations will not be included in the API response.
+
+🚧
+
+The Notion API does not support retrieving linked databases.
+
+To fetch the information in a linked database, share the original source database with your Notion integration.
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const databaseId = '668d797c-76fa-4934-9b05-ad288df2d136';
+  const response = await notion.databases.retrieve({ database_id: databaseId });
+  console.log(response);
+})();

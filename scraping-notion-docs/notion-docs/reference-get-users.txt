@@ -1,0 +1,69 @@
+List all users
+GET
+https://api.notion.com/v1/users
+
+Returns a paginated list of Users for the workspace. The response may contain fewer than page_size of results.
+
+Guests are not included in the response.
+
+See Pagination for details about how to use a cursor to iterate through the list.
+
+Errors
+
+Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+📘
+
+The API does not currently support filtering users by their email and/or name.
+
+📘
+
+Integration capabilities
+
+This endpoint requires an integration to have user information capabilities. Attempting to call this API without user information capabilities will return an HTTP response with a 403 status code. For more information on integration capabilities, see the capabilities guide.
+
+QUERY PARAMS
+start_cursor
+string
+
+If supplied, this endpoint will return a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results.
+
+page_size
+int32
+Defaults to 100
+
+The number of items from the full list desired in the response. Maximum: 100
+
+HEADERS
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+
+RESPONSES
+200
+
+200
+
+400
+
+400
+
+Updated 2 months ago
+
+Update database properties
+Retrieve a user
+Did this page help you?
+Yes
+No
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const response = await notion.users.list();
+  console.log(response);
+})();

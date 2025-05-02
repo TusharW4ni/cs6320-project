@@ -1,0 +1,72 @@
+Retrieve block children
+GET
+https://api.notion.com/v1/blocks/{block_id}/children
+
+Returns a paginated array of child block objects contained in the block using the ID specified. In order to receive a complete representation of a block, you may need to recursively retrieve the block children of child blocks.
+
+👍
+
+Page content is represented by block children. See the Working with page content guide for more information.
+
+Returns only the first level of children for the specified block. See block objects for more detail on determining if that block has nested children.
+
+The response may contain fewer than page_size of results.
+
+See Pagination for details about how to use a cursor to iterate through the list.
+
+📘
+
+Integration capabilities
+
+This endpoint requires an integration to have read content capabilities. Attempting to call this API without read content capabilities will return an HTTP response with a 403 status code. For more information on integration capabilities, see the capabilities guide.
+
+Errors
+
+Returns a 404 HTTP response if the block specified by id doesn't exist, or if the integration doesn't have access to the block.
+
+Returns a 400 or 429 HTTP response if the request exceeds the request limits.
+
+Note: Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+PATH PARAMS
+block_id
+string
+required
+
+Identifier for a block
+
+QUERY PARAMS
+start_cursor
+string
+
+If supplied, this endpoint will return a page of results starting after the cursor provided. If not supplied, this endpoint will return the first page of results.
+
+page_size
+int32
+Defaults to 100
+
+The number of items from the full list desired in the response. Maximum: 100
+
+HEADERS
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+
+RESPONSES
+200
+
+200
+
+400
+
+400
+
+Updated 2 months ago
+
+Retrieve a block
+Update a block
+Did this page help you?
+Yes
+No

@@ -1,0 +1,170 @@
+Create a database
+POST
+https://api.notion.com/v1/databases
+
+Creates a database as a subpage in the specified parent page, with the specified properties schema. Currently, the parent of a new database must be a Notion page or a wiki database.
+
+📘
+
+Integration capabilities
+
+This endpoint requires an integration to have insert content capabilities. Attempting to call this API without insert content capabilities will return an HTTP response with a 403 status code. For more information on integration capabilities, see the capabilities guide.
+
+🚧
+
+Limitations
+
+Creating new status database properties is currently not supported.
+
+Errors
+
+Returns a 404 if the specified parent page does not exist, or if the integration does not have access to the parent page.
+
+Returns a 400 if the request is incorrectly formatted, or a 429 HTTP response if the request exceeds the request limits.
+
+Note: Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+
+Body Params
+parent
+json
+required
+
+A page parent
+title
+array
+
+Title of database as it appears in Notion. An array of rich text objects.
+properties
+json
+required
+
+Property schema of database. The keys are the names of properties as they appear in Notion and the values are property schema objects.
+Headers
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+Responses
+
+200
+Response body
+json
+400
+Response body
+object
+
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const response = await notion.databases.create({
+      parent: {
+        type: "page_id",
+        page_id: "98ad959b-2b6a-4774-80ee-00246fb0ea9b",
+      },
+      icon: {
+        type: "emoji",
+        emoji: "📝",
+      },
+      cover: {
+        type: "external",
+        external: {
+          url: "https://website.domain/images/image.png",
+        },
+      },
+      title: [
+        {
+          type: "text",
+          text: {
+            content: "Grocery List",
+            link: null,
+          },
+        },
+      ],
+      properties: {
+        Name: {
+          title: {},
+        },
+        Description: {
+          rich_text: {},
+        },
+        "In stock": {
+          checkbox: {},
+        },
+        "Food group": {
+          select: {
+            options: [
+              {
+                name: "🥦Vegetable",
+                color: "green",
+              },
+              {
+                name: "🍎Fruit",
+                color: "red",
+              },
+              {
+                name: "💪Protein",
+                color: "yellow",
+              },
+            ],
+          },
+        },
+        Price: {
+          number: {
+            format: "dollar",
+          },
+        },
+        "Last ordered": {
+          date: {},
+        },
+        Meals: {
+          relation: {
+            database_id: "668d797c-76fa-4934-9b05-ad288df2d136",
+            single_property: {},
+          },
+        },
+        "Number of meals": {
+          rollup: {
+            rollup_property_name: "Name",
+            relation_property_name: "Meals",
+            function: "count",
+          },
+        },
+        "Store availability": {
+          type: "multi_select",
+          multi_select: {
+            options: [
+              {
+                name: "Duc Loi Market",
+                color: "blue",
+              },
+              {
+                name: "Rainbow Grocery",
+                color: "gray",
+              },
+              {
+                name: "Nijiya Market",
+                color: "purple",
+              },
+              {
+                name: "Gus'''s Community Market",
+                color: "yellow",
+              },
+            ],
+          },
+        },
+        "+1": {
+          people: {},
+        },
+        Photo: {
+          files: {},
+        },
+      },
+    });
+  console.log(response);
+})();

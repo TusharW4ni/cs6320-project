@@ -1,0 +1,190 @@
+Append block children
+PATCH
+https://api.notion.com/v1/blocks/{block_id}/children
+
+Creates and appends new children blocks to the parent block_id specified. Blocks can be parented by other blocks, pages, or databases.
+
+Returns a paginated list of newly created first level children block objects.
+
+Existing blocks cannot be moved using this endpoint. Blocks are appended to the bottom of the parent block. To append a block in a specific place other than the bottom of the parent block, use the "after" parameter and set its value to the ID of the block that the new block should be appended after. Once a block is appended as a child, it can't be moved elsewhere via the API.
+
+For blocks that allow children, we allow up to two levels of nesting in a single request.
+
+There is a limit of 100 block children that can be appended by a single API request. Arrays of block children longer than 100 will result in an error.
+
+📘
+
+Integration capabilities
+
+This endpoint requires an integration to have insert content capabilities. Attempting to call this API without insert content capabilities will return an HTTP response with a 403 status code. For more information on integration capabilities, see the capabilities guide.
+
+Errors
+
+Returns a 404 HTTP response if the block specified by id doesn't exist, or if the integration doesn't have access to the block.
+
+Returns a 400 or 429 HTTP response if the request exceeds the request limits.
+
+Note: Each Public API endpoint can return several possible error codes. To see a full description of each type of error code, see the Error codes section of the Status codes documentation.
+
+
+Path Params
+block_id
+string
+required
+
+Identifier for a block. Also accepts a page ID.
+Body Params
+children
+array
+required
+
+Child content to append to a container block as an array of block objects
+after
+string
+
+The ID of the existing block that the new block should be appended after.
+Headers
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+
+Responses
+
+200
+Response body
+object
+object
+string
+results
+array of objects
+object
+object
+string
+id
+string
+parent
+object
+type
+string
+page_id
+string
+created_time
+string
+last_edited_time
+string
+created_by
+object
+object
+string
+id
+string
+last_edited_by
+object
+object
+string
+id
+string
+has_children
+boolean
+Defaults to true
+archived
+boolean
+Defaults to true
+type
+string
+heading_2
+object
+rich_text
+array of objects
+object
+type
+string
+text
+object
+content
+string
+link
+string
+annotations
+object
+bold
+boolean
+Defaults to true
+italic
+boolean
+Defaults to true
+strikethrough
+boolean
+Defaults to true
+underline
+boolean
+Defaults to true
+code
+boolean
+Defaults to true
+color
+string
+plain_text
+string
+href
+string
+color
+string
+is_toggleable
+boolean
+Defaults to true
+next_cursor
+string
+has_more
+boolean
+Defaults to true
+type
+string
+block
+object
+
+400
+Response body
+object
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const blockId = 'b55c9c91-384d-452b-81db-d1ef79372b75';
+  const response = await notion.blocks.children.append({
+    block_id: blockId,
+    children: [
+      {
+        "heading_2": {
+          "rich_text": [
+            {
+              "text": {
+                "content": "Lacinato kale"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "paragraph": {
+          "rich_text": [
+            {
+              "text": {
+                "content": "Lacinato kale is a variety of kale with a long tradition in Italian cuisine, especially that of Tuscany. It is also known as Tuscan kale, Italian kale, dinosaur kale, kale, flat back kale, palm tree kale, or black Tuscan palm.",
+                "link": {
+                  "url": "https://en.wikipedia.org/wiki/Lacinato_kale"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+  });
+  console.log(response);
+})();

@@ -1,0 +1,147 @@
+Retrieve a block
+GET
+https://api.notion.com/v1/blocks/{block_id}
+
+Retrieves a Block object using the ID specified.
+
+If the block returned contains the key has_children: true, use the Retrieve block children endpoint to get the list of children.
+
+To retrieve page content for a specific page, use Retrieve block children and set the page ID as the block_id.
+
+For more information, read the Working with page content guide.
+
+📘
+
+Integration capabilities
+
+This endpoint requires an integration to have read content capabilities. Attempting to call this API without read content capabilities will return an HTTP response with a 403 status code. For more information on integration capabilities, see the capabilities guide.
+
+Errors
+
+Returns a 404 HTTP response if the block doesn't exist, or if the integration doesn't have access to the block.
+
+Returns a 400 or 429 HTTP response if the request exceeds the request limits.
+
+Note: Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+PATH PARAMS
+block_id
+string
+required
+
+Identifier for a Notion block
+
+HEADERS
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+
+RESPONSES
+200
+
+200
+Response body
+object
+object
+string
+id
+string
+parent
+object
+type
+string
+page_id
+string
+created_time
+string
+last_edited_time
+string
+created_by
+object
+object
+string
+id
+string
+last_edited_by
+object
+object
+string
+id
+string
+has_children
+boolean
+Defaults to true
+archived
+boolean
+Defaults to true
+type
+string
+heading_2
+object
+rich_text
+array of objects
+object
+type
+string
+text
+object
+content
+string
+link
+string
+annotations
+object
+bold
+boolean
+Defaults to true
+italic
+boolean
+Defaults to true
+strikethrough
+boolean
+Defaults to true
+underline
+boolean
+Defaults to true
+code
+boolean
+Defaults to true
+color
+string
+plain_text
+string
+href
+string
+color
+string
+is_toggleable
+boolean
+Defaults to true
+400
+
+400
+Response body
+object
+Updated 2 months ago
+
+Append block children
+Retrieve block children
+Did this page help you?
+Yes
+No
+
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const blockId = 'c02fc1d3-db8b-45c5-a222-27595b15aea7';
+  const response = await notion.blocks.retrieve({
+    block_id: blockId,
+  });
+  console.log(response);
+})();

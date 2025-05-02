@@ -1,0 +1,232 @@
+Update page properties
+PATCH
+https://api.notion.com/v1/pages/{page_id}
+
+Updates the properties of a page in a database. The properties body param of this endpoint can only be used to update the properties of a page that is a child of a database. The page’s properties schema must match the parent database’s properties.
+
+This endpoint can be used to update any page icon or cover, and can be used to delete or restore any page.
+
+To add page content instead of page properties, use the append block children endpoint. The page_id can be passed as the block_id when adding block children to the page.
+
+Returns the updated page object.
+
+📘
+
+Requirements
+
+Your integration must have update content capabilities on the target page in order to call this endpoint. To update your integrations capabilities, navigation to the My integrations dashboard, select your integration, go to the Capabilities tab, and update your settings as needed.
+
+Attempting a query without update content capabilities returns an HTTP response with a 403 status code.
+
+🚧
+
+Limitations
+
+Updating rollup property values is not supported.
+A page’s parent cannot be changed.
+Errors
+
+Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+PATH PARAMS
+page_id
+string
+required
+
+The identifier for the Notion page to be updated.
+
+BODY PARAMS
+properties
+json
+
+The property values to update for the page. The keys are the names or IDs of the property and the values are property values. If a page property ID is not included, then it is not changed.
+
+in_trash
+boolean
+Defaults to false
+
+Set to true to delete a block. Set to false to restore a block.
+
+icon
+json
+
+A page icon for the page. Supported types are external file object or emoji object.
+
+cover
+json
+
+A cover image for the page. Only external file objects are supported.
+
+HEADERS
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+
+RESPONSES
+200
+
+200
+Response body
+object
+object
+string
+id
+string
+created_time
+string
+last_edited_time
+string
+created_by
+object
+object
+string
+id
+string
+last_edited_by
+object
+object
+string
+id
+string
+cover
+object
+type
+string
+external
+object
+url
+string
+icon
+object
+type
+string
+emoji
+string
+parent
+object
+type
+string
+database_id
+string
+archived
+boolean
+Defaults to true
+properties
+object
+Store availability
+object
+id
+string
+Food group
+object
+id
+string
+Price
+object
+id
+string
+Responsible Person
+object
+id
+string
+Last ordered
+object
+id
+string
+Cost of next trip
+object
+id
+string
+Recipes
+object
+id
+string
+Description
+object
+id
+string
+In stock
+object
+id
+string
+Number of meals
+object
+id
+string
+Photo
+object
+id
+string
+Name
+object
+id
+string
+url
+string
+
+400
+
+400
+Response body
+object
+404
+
+404
+Response body
+object
+object
+string
+status
+integer
+Defaults to 0
+code
+string
+message
+string
+
+429
+
+429
+Response body
+object
+object
+string
+status
+integer
+Defaults to 0
+code
+string
+message
+string
+
+Updated 2 months ago
+
+WHAT’S NEXT
+
+To learn how to delete a page, check out the guide below!
+
+Trash a page
+Did this page help you?
+Yes
+No
+
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const pageId = '59833787-2cf9-4fdf-8782-e53db20768a5';
+  const response = await notion.pages.update({
+    page_id: pageId,
+    properties: {
+      'In stock': {
+        checkbox: true,
+      },
+    },
+  });
+  console.log(response);
+})();

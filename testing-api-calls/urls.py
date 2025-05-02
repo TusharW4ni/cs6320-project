@@ -16,6 +16,11 @@ def fetch_notion_docs(url):
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(url, headers=headers)
     response.raise_for_status()
+    os.makedirs("notion_docs", exist_ok=True)
+    file_path = os.path.join("notion_docs", "notion_docs.html")
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(response.text)
+    print(f"Saved HTML content to {file_path}")
     return response.text
 
 
@@ -45,6 +50,10 @@ def clean_text(text):
     """
     # Remove multiple spaces
     text = re.sub(r"\s+", " ", text)
+    file_path = os.path.join("notion_docs", "notion_docs_cleaned.txt")
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(text)
+    print(f"Saved cleaned text to {file_path}")
     return text.strip()
 
 
@@ -114,4 +123,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    fetch_notion_docs("https://developers.notion.com/docs/getting-started")
+    clean_text("notion_docs/notion_docs.html")

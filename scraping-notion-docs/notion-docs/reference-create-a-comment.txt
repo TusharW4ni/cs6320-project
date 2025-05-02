@@ -1,0 +1,100 @@
+Create comment
+POST
+https://api.notion.com/v1/comments
+
+Creates a comment in a page or existing discussion thread.
+
+Returns a comment object for the created comment.
+
+There are two locations where a new comment can be added with the public API:
+
+A page.
+An existing discussion thread.
+
+The request body will differ slightly depending on which type of comment is being added with this endpoint.
+
+To add a new comment to a page, a parent object with a page_id must be provided in the body params.
+
+To add a new comment to an existing discussion thread, a discussion_id string must be provided in the body params. (Inline comments to start a new discussion thread cannot be created via the public API.)
+
+Either the parent.page_id or discussion_id parameter must be provided — not both.
+
+To see additional examples of creating a page or discussion comment and to learn more about comments in Notion, see the Working with comments guide.
+
+Errors
+
+Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+📘
+
+Reminder: Turn on integration comment capabilities
+
+Integration capabilities for reading and inserting comments are off by default.
+
+This endpoint requires an integration to have insert comment capabilities. Attempting to call this endpoint without insert comment capabilities will return an HTTP response with a 403 status code.
+
+For more information on integration capabilities, see the capabilities guide. To update your integration settings, visit the integration dashboard.
+
+BODY PARAMS
+parent
+json
+
+A page parent. Either this or a discussion_id is required (not both)
+
+discussion_id
+string
+
+A UUID identifier for a discussion thread. Either this or a parent object is required (not both)
+
+rich_text
+json
+required
+
+A rich text object
+
+HEADERS
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+
+RESPONSES
+200
+
+200
+
+403
+
+403
+
+Updated about 1 month ago
+
+Retrieve your token's bot user
+Retrieve comments
+Did this page help you?
+Yes
+No
+
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const response = await notion.comments.create({
+    "parent": {
+      "page_id": "5c6a28216bb14a7eb6e1c50111515c3d"
+    },
+    "rich_text": [
+      {
+        "text": {
+          "content": "Hello world"
+        }
+      }
+    ]
+	});
+
+  console.log(response);
+})();

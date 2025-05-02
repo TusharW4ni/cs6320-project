@@ -1,0 +1,26 @@
+Revoke token
+POST
+https://api.notion.com/v1/oauth/revoke
+
+Revoke an access token.
+
+
+Body Params
+token
+string
+required
+
+Revoke an access token
+Headers
+Authorization
+string
+Defaults to Basic $BASE64_ENCODED_ID_AND_SECRET
+Responses
+
+200
+Response body
+json
+
+400
+Response body
+object

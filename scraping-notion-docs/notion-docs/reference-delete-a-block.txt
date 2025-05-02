@@ -1,0 +1,99 @@
+Delete a block
+DELETE
+https://api.notion.com/v1/blocks/{block_id}
+
+Sets a Block object, including page blocks, to archived: true using the ID specified. Note: in the Notion UI application, this moves the block to the "Trash" where it can still be accessed and restored.
+
+To restore the block with the API, use the Update a block or Update page respectively.
+
+📘
+
+Integration capabilities
+
+This endpoint requires an integration to have update content capabilities. Attempting to call this API without update content capabilities will return an HTTP response with a 403 status code. For more information on integration capabilities, see the capabilities guide.
+
+Errors
+
+Returns a 404 HTTP response if the block doesn't exist, or if the integration doesn't have access to the block.
+
+Returns a 400 or 429 HTTP response if the request exceeds the request limits.
+
+Note: Each Public API endpoint can return several possible error codes. See the Error codes section of the Status codes documentation for more information.
+
+
+Path Params
+block_id
+string
+required
+
+Identifier for a Notion block
+Headers
+Notion-Version
+string
+required
+
+The API version to use for this request. The latest version is 2022-06-28.
+Responses
+
+200
+Response body
+object
+object
+string
+id
+string
+parent
+object
+type
+string
+page_id
+string
+created_time
+string
+last_edited_time
+string
+created_by
+object
+object
+string
+id
+string
+last_edited_by
+object
+object
+string
+id
+string
+has_children
+boolean
+Defaults to true
+archived
+boolean
+Defaults to true
+type
+string
+paragraph
+object
+rich_text
+array
+color
+string
+
+
+400
+Response body
+object
+
+
+example:
+const { Client } = require('@notionhq/client');
+
+const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+(async () => {
+  const blockId = '7985540b-2e77-4ac6-8615-c3047e36f872';
+  const response = await notion.blocks.delete({
+    block_id: blockId,
+  });
+  console.log(response);
+})();
