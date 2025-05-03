@@ -9,10 +9,13 @@ import { GoogleGenAI } from "@google/genai";
 import {
   createNewPageFn,
   createAssignmentFn,
+  updateAssignmentFn,
 } from "~/server/api/ntn/assignments/ai-functions";
 import {
   ensureAssignmentsDatabase,
   addAssignment,
+  updateAssignment,
+  findAssignmentPageId,
 } from "~/server/api/ntn/assignments/db-service";
 
 export default defineEventHandler(async (event) => {
@@ -88,7 +91,13 @@ export default defineEventHandler(async (event) => {
   // Prepare Gemini tools
   const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   const tools = [
-    { functionDeclarations: [createNewPageFn, createAssignmentFn] },
+    {
+      functionDeclarations: [
+        createNewPageFn,
+        createAssignmentFn,
+        updateAssignmentFn,
+      ],
+    },
   ];
   console.log(
     "tools:",
@@ -97,10 +106,10 @@ export default defineEventHandler(async (event) => {
 
   // Call Gemini with audio data
   let result: any;
-  const config: any = {
+  /*const config: any = {
     tools,
     toolChoice: "auto",
-  };
+  };*/
   try {
     console.log("calling Gemini...");
     result = await ai.models.generateContent({
@@ -109,7 +118,7 @@ export default defineEventHandler(async (event) => {
         { text: "Decide which function to call based on this recording:" },
         { inlineData: { data: audioBase64, mimeType } },
       ],
-      config,
+      config: { tools },
     });
     console.log("raw response:", JSON.stringify(result, null, 2));
   } catch (err: any) {
@@ -154,6 +163,24 @@ export default defineEventHandler(async (event) => {
         console.log("createAssignment succeeded");
       } catch (err: any) {
         console.error("createAssignment failed:", err);
+      }
+    } else if (call.name === "updateAssignment") {
+      const { title, course, dueDate, taskTags, status } = call.args;
+
+      try {
+        const dbId = await ensureAssignmentsDatabase(ntnApiKey, parentPageId);
+        const pageId = await findAssignmentPageId(ntnApiKey, dbId, title);
+
+        await updateAssignment(ntnApiKey, dbId, title, {
+          course,
+          dueDate,
+          taskTags,
+          status,
+        });
+
+        console.log("updateAssignment succeeded");
+      } catch (e: any) {
+        console.error("updateAssignment failed:", e);
       }
     } else {
       console.warn("unknown function call", call.name);

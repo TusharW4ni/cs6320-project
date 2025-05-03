@@ -3,11 +3,19 @@ import { GoogleGenAI } from "@google/genai";
 import {
   createNewPageFn,
   createAssignmentFn,
+  updateAssignmentFn,
+  createTaskFn,
 } from "~/server/api/ntn/assignments/ai-functions";
 import {
   ensureAssignmentsDatabase,
   addAssignment,
+  updateAssignment,
+  findAssignmentPageId,
 } from "~/server/api/ntn/assignments/db-service";
+import {
+  ensureTasksDatabase,
+  createTask,
+} from "~/server/api/ntn/assignments/db-service-task";
 
 export default defineEventHandler(async (event) => {
   console.log("Process Text start");
@@ -51,6 +59,7 @@ export default defineEventHandler(async (event) => {
       throw new Error(`Page titled "${parentPageTitle}" not found`);
     }
     parentPageId = pages[0].id;
+    console.log("Pages:", pages);
     console.log("resolved parentPageId:", parentPageId);
   } catch (e: any) {
     console.error("lookup parentPageId failed:", e);
@@ -62,7 +71,14 @@ export default defineEventHandler(async (event) => {
 
   const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   const tools = [
-    { functionDeclarations: [createNewPageFn, createAssignmentFn] },
+    {
+      functionDeclarations: [
+        createNewPageFn,
+        createAssignmentFn,
+        updateAssignmentFn,
+        createTaskFn,
+      ],
+    },
   ];
   console.log(
     "tools:",
@@ -70,10 +86,10 @@ export default defineEventHandler(async (event) => {
   );
 
   let result: any;
-  const config: any = {
+  /*const config: any = {
     tools,
     toolChoice: "auto",
-  };
+  };*/
 
   try {
     console.log("calling Gemini…");
@@ -83,7 +99,7 @@ export default defineEventHandler(async (event) => {
         { text: "Decide which function to call based on this text prompt:" },
         { text: textPrompt },
       ],
-      config,
+      config: { tools },
     });
     console.log("raw response:", JSON.stringify(result, null, 2));
   } catch (e: any) {
@@ -97,6 +113,7 @@ export default defineEventHandler(async (event) => {
   // Handle function calls
   for (const call of result.functionCalls || []) {
     console.log(`call.name=${call.name}`, call.args);
+    let dbId: string | undefined;
 
     if (call.name === "createNewPage") {
       const title = call.args?.title || "Untitled Page";
@@ -129,6 +146,39 @@ export default defineEventHandler(async (event) => {
         console.log("createAssignment succeeded");
       } catch (e: any) {
         console.error("createAssignment failed:", e);
+      }
+    } else if (call.name === "updateAssignment") {
+      const { title, course, dueDate, taskTags, status } = call.args;
+
+      try {
+        const dbId = await ensureAssignmentsDatabase(ntnApiKey, parentPageId);
+        const pageId = await findAssignmentPageId(ntnApiKey, dbId, title);
+
+        await updateAssignment(ntnApiKey, dbId, title, {
+          course,
+          dueDate,
+          taskTags,
+          status,
+        });
+
+        console.log("updateAssignment succeeded");
+      } catch (e: any) {
+        console.error("updateAssignment failed:", e);
+      }
+    } else if (call.name === "createTask") {
+      const { title, priority, status } = call.args;
+      const taskData = {
+        title,
+        priority,
+        status: status,
+      };
+      console.log("invoking createTask", taskData);
+      try {
+        const taskdbId = await ensureTasksDatabase(ntnApiKey, parentPageId);
+        await createTask(taskdbId, taskData, ntnApiKey);
+        console.log("createTask succeeded");
+      } catch (e: any) {
+        console.error("createTask failed", e);
       }
     } else {
       console.warn("unknown function call:", call.name);

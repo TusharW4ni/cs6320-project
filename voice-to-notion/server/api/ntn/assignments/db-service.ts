@@ -27,8 +27,13 @@ export async function ensureAssignmentsDatabase(
   parentPageIdentifier: string
 ): Promise<string> {
   const notion = getNotionClient(notionKey);
+  console.log(
+    "ensureTasksDatabase: parentPageIdentifier=",
+    parentPageIdentifier
+  );
 
   if (cachedDbId) {
+    console.log("ensureTasksDatabase: cachedTaskDbId=", cachedDbId);
     try {
       await notion.databases.retrieve({ database_id: cachedDbId });
       return cachedDbId;
@@ -47,7 +52,11 @@ export async function ensureAssignmentsDatabase(
 
   if (uuidRegex.test(parentPageIdentifier)) {
     parentPageId = parentPageIdentifier;
+    console.log("ensureTasksDatabase: parentPageIdentifier is a UUID");
   } else {
+    console.log(
+      "ensureTasksDatabase: parentPageIdentifier is NOT a UUID, searching..."
+    );
     const searchRes = await notion.search({
       query: parentPageIdentifier,
       filter: { property: "object", value: "page" },
@@ -58,6 +67,7 @@ export async function ensureAssignmentsDatabase(
       );
     }
     parentPageId = (searchRes.results[0] as any).id;
+    console.log("ensureTasksDatabase: found parentPageId=", parentPageId);
   }
 
   // Look for existing database
@@ -106,6 +116,7 @@ export async function ensureAssignmentsDatabase(
 
   if (existing) {
     const dbId = (existing as any).id;
+    console.log("ensureTasksDatabase: found existing database, id=", dbId);
     // Reorder properties on existing DB
     await notion.databases.update({
       database_id: dbId,
@@ -114,7 +125,7 @@ export async function ensureAssignmentsDatabase(
     cachedDbId = dbId;
     return dbId;
   }
-
+  console.log("ensureTasksDatabase: creating new database");
   // Create new DB with respective column orders
   const resp = await notion.databases.create({
     parent: { page_id: parentPageId },
@@ -123,6 +134,7 @@ export async function ensureAssignmentsDatabase(
   });
 
   cachedDbId = resp.id;
+  console.log("ensureTasksDatabase: created new database, id=", cachedDbId);
   return resp.id;
 }
 
@@ -168,4 +180,93 @@ export async function addAssignment(
     parent: { database_id: databaseId },
     properties,
   });
+}
+
+export async function updateAssignment(
+  notionKey: string,
+  databaseId: string,
+  title: string,
+  updates: {
+    course?: string;
+    newTitle?: string; // separate from title used for lookup
+    dueDate?: string;
+    taskTags?: string[];
+    status?: boolean;
+  }
+) {
+  const notion = new Client({ auth: notionKey });
+
+  // Step 1: Find the page ID by title
+  const query = await notion.databases.query({
+    database_id: databaseId,
+    filter: {
+      property: "Name",
+      title: {
+        equals: title,
+      },
+    },
+  });
+
+  if (query.results.length === 0) {
+    throw new Error(`Assignment with title "${title}" not found`);
+  }
+
+  const pageId = query.results[0].id;
+
+  const properties: Record<string, any> = {};
+
+  if (updates.newTitle) {
+    properties["Name"] = {
+      title: [{ text: { content: updates.newTitle } }],
+    };
+  }
+  if (updates.course) {
+    properties["Course"] = {
+      select: { name: updates.course },
+    };
+  }
+  if (updates.dueDate) {
+    properties["Due Date"] = {
+      date: { start: updates.dueDate },
+    };
+  }
+  if (Array.isArray(updates.taskTags)) {
+    properties["Task"] = {
+      multi_select: updates.taskTags.map((name) => ({ name })),
+    };
+  }
+  if (typeof updates.status === "boolean") {
+    properties["Status"] = {
+      checkbox: updates.status,
+    };
+  }
+
+  return notion.pages.update({
+    page_id: pageId,
+    properties,
+  });
+}
+
+//finds
+export async function findAssignmentPageId(
+  notionKey: string,
+  dbId: string,
+  title: string
+): Promise<string> {
+  const notion = new Client({ auth: notionKey });
+  const result = await notion.databases.query({
+    database_id: dbId,
+    filter: {
+      property: "Name",
+      title: {
+        equals: title,
+      },
+    },
+  });
+
+  if (!result.results.length) {
+    throw new Error(`Assignment with title "${title}" not found`);
+  }
+
+  return result.results[0].id;
 }
