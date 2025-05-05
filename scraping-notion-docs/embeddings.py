@@ -30,7 +30,7 @@ collection.add(
 print(f"Successfully added {collection.count()} documents to Chroma using the default embedding function (direct).")
 
 
-query = "How do I create a database?"
+query = "How do I update a database?"
 results = collection.query(
     query_texts=[query],
     n_results=3
