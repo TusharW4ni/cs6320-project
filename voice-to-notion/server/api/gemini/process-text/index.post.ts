@@ -23,7 +23,7 @@ function extractCode(text: string): string | null {
   return match ? match[1].trim() : null;
 }
 
-let processGemini = async (textPrompt: string, databaseId: string) => {
+let processGemini = async (textPrompt: string, parentPageId: string) => {
   console.log("API: /api/gemini/generate-code/index.post.ts");
 
   /*let prompt =
@@ -68,7 +68,7 @@ let processGemini = async (textPrompt: string, databaseId: string) => {
   }
   const context = results.documents.join("\n\n");
 
-  const geminiPrompt = `You are a helpful assistant that can generate JavaScript code to interact with the Notion Rest API (do not use Javascript Notion library). Use the following context to understand the user's request and generate code to fulfill it. Return ONLY the executable javascript code, do not use import or require statements assume that they're already imported, do not include any other text or explanations. Notion token is provided as an environment NOTION_API_KEY variable. The database id is ${databaseId}.
+  const geminiPrompt = `You are a helpful assistant that can generate JavaScript code to interact with the Notion Rest API (do not use Javascript Notion library). Use the following context to understand the user's request and generate code to fulfill it. Return ONLY the executable javascript code, do not use import or require statements assume that they're already imported, do not include any other text or explanations. Notion token is provided as an environment NOTION_API_KEY variable. The parent page id is ${parentPageId}.
 
 Context:
 ${context}
@@ -81,6 +81,7 @@ User Request: ${prompt}
     console.log("Prompting Gemini...");
     geminiResponse = await ai.models.generateContent({
       model: "gemini-2.0-flash",
+      config: { temperature: 0.8 },
       contents: [{ text: geminiPrompt }],
     });
     console.log("Gemini response:", geminiResponse);
