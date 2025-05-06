@@ -33,7 +33,7 @@ let processGemini = async (
   parentPageId: string,
   mimeType: string
 ) => {
-  console.log("API: /api/gemini/generate-code/index.post.ts");
+  //console.log("API: /api/gemini/generate-code/index.post.ts");
 
   /*let prompt =
     "Update the title of this database to 'Assignments'. The database id is 1ead52e75c848039af5fed608bfc8785";*/

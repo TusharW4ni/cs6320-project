@@ -1,825 +1,0 @@
-A Link Preview is a real-time excerpt of authenticated content that unfurls in Notion when an authenticated user pastes a supported link in their workspace.
-
-Developers can build Link Preview integrations to customize how links unfurl in Notion workspaces for domains they own.
-
-An example Link Preview for a GitHub workflow
-
-This guide explains how to use the Notion Link Previews API to create Link Previews for your product. After you‚Äôve read this guide, you‚Äôll know how to:
-
-Configure Link Preview settings in the integration dashboard
-
-Set up the authorization flow
-
-Use the Unfurl Callback URL
-
-Manage updates to Link Previews
-
-Submit a Link Preview integration for security review
-
-üöß
-
-To build a Link Preview integration, you must first request access to the Link Preview API. Fill out the¬†Link Preview request form¬†before proceeding if you haven‚Äôt already.
-
-Requirements
-You‚Äôve requested and received access to the Link Previews API.
-You own the domain that you‚Äôre using to create Link Previews. You‚Äôll need to share a verification code from Notion with your domain host when you initialize the integration.
-Your application supports OAuth 2.0.
-You‚Äôve read the Link Previews overview, so you have a good idea of what you‚Äôre building and how it works.
-You‚Äôve read the Authorization guide and have familiarized yourself with Notion integrations.
-
-With those requirements met, read on!
-
-üöß
-
-To build a Link Preview integration, you must first request access to the Link Preview API. Fill out the Link Preview request form before proceeding if you haven‚Äôt already.
-
-üå±¬†Create a public Notion integration
-
-Link Preview integrations are a type of public integration. To create a Link Preview integration, you must first create a public integration. Once the public integration is created, you can enable the link preview setting through the integration's settings.
-
-To learn how to create a public integration, follow the Authorization guide.
-
-üõ†Ô∏è¬†Configure Link Preview settings in the integration dashboard
-
-This step will guide you through enabling link previews for your integration, as well as filling out the link preview integration forms found in your integration settings.
-
-To start, navigate to the public integration you will be using for your link preview integration. It can be found in the integration dashboard. If you have access to the Link Preview API, you will see a¬†Link Preview¬†section in the Configuration tab.
-
-This page contains a toggle input to enable link previews for your integration. Switching it on will display the External Authorization Setup form that will you need to fill out and save.
-
-Once the link preview toggle is turned on for the integration, you will need to fill out two forms in the following order:
-
-The External Authorization Setup form.
-The Unfurling Domain & Patterns form.
-
-In the next section, we'll review how to fill out these forms.
-
-üìò
-
-If you don't see Enable link preview as an option, then:
-
-Make sure that you‚Äôve applied and received access to the Link Previews API.
-Confirm that you‚Äôre logged in to the Notion account that you used to request access.
-Reach out to developers@makenotion.com if you continue to have issues.
-1. Fill out the External Authorization Setup form
-
-The External Authorization Setup settings give Notion the information that it needs to let a user authenticate with your service when they paste a Link Preview enabled URL in Notion.
-
-Field	Description	Example value
-OAuth Authorize URL	The URL that Notion redirects the user to when they connect your integration to their account.
-
-When Notion redirects to this URL, it passes a code as a query param in the request. Your integration trades the code for an access_token to make authenticated requests to the Link Previews APIs.	https://<your_domain>.com/notion/authorize
-OAuth Token URL	The URL that responds to a Notion POST request with an access_token from your service.
-
-Notion uses the access_token to make authenticated requests to your systems.	https://<your_domain>.com/notion/token
-OAuth Client ID	The client ID that Notion uses in its requests to your Authorize and OAuth Token URLs.	mRkZGFjM
-OAuth Client Secret	The client secret that Notion uses in its requests to the Authorize and Token URLs.	ZGVmMjMz
-OAuth Scopes (optional)	An optional scopes string for Notion to send as a parameter in the request to your OAuth Authorize URL.	unfurl, user_name
-Deleted Token Callback URL (optional)	A URL that Notion sends a DELETE request to when a user removes a Link Preview from a Notion page or disconnects your integration from their workspace, so that you can delete their tokens.
-
-You can use the request body that Notion sends to look up the user and deactivate their associated access_tokens from your service.
-
-Whether or not you use a deleted token callback, Notion invalidates any Notion-side tokens corresponding to the user and the Link Preview that they delete.	https://<your_domain>.com/notion/deletion
-
-After you‚Äôve filled out this information, click "Submit ->" to continue to Unfurling Domain & Patterns.
-
-2. Fill out the Unfurling Domain & Patterns form
-
-The Unfurling Domain & Patterns settings give Notion the information that it needs to recognize the URLs that you want to unfurl Link Previews.
-
-Field	Description	Example value
-Unfurl Callback URL	The URL that shares data to be displayed in the Link Preview with Notion. Notion sends POST and DELETE requests to this URL when a user adds or deletes a Link Preview.
-
-You can leave this blank as you set up OAuth and return to it once you‚Äôve created your unfurl attributes. Refer to Step 3 for details.
-
-Must be an internet-accessible URL that can and should be protected by authentication.	https://<your_domain>.com/unfurl
-Unfurl URL Domain	The root domain that maps to this integration.
-
-After you add a domain, follow the prompts to verify your domain with Notion.	<your_domain>.com
-URL matching and placeholder	The pattern that a URL must match in order to unfurl as a Link Preview.
-
-You can provide multiple patterns for one integration.	Refer to the table below.
-
-The URL matching and placeholder field includes its own fields:
-
-Field	Description	Example value
-Rule name	A name for the pattern.	"item"
-Sample URLs	An example URL that matches the pattern and triggers a Link Preview.	https://acme.com/items/23487
-Pattern	A Regex pattern that Notion can use to identify URLs that trigger Link Previews.
-
-If the Regex pattern fails to match any sample URL, then an error prompt appears when you save settings.	^(?<site>https\:\/\/acme\.com)\/items\/(?<itemNo>\d+)$
-Unfurl Regex Attributes	An array of JSON objects. Each JSON object contains placeholders, populated from Regex capture groups, for a Link Preview‚Äôs unfurl attributes. Placeholders are displayed when a Link Preview is waiting for data to populate from your service.
-
-You can leave this blank as you set up OAuth and return to it once you‚Äôve created your unfurl attributes.	[ { "id": "title", "name": "Title", "type": "inline", "inline": { "title": { "value": "Acme Item #$<itemNo>", "section": "title" } } }, { "id": "itemId", "name": "Item Id", "type": "inline", "inline": { "plain_text": { "value": "#$<itemNo>", "section": "identifier" } } }, { "id": "dev", "name": "Developer Name", "type": "inline", "inline": { "plain_text": { "value": "Acme Inc", "section": "secondary" } } } ]
-
-After you've filled out the External Authorization Setup and Unfurling Domain & Patterns settings, click "Submit ->" to create the integration.
-
-üîí¬†Set up the authorization flow
-
-There are two high-level parts to the auth flow for a Link Preview:
-
-Your service authenticates with Notion. Notion sends a code to your OAuth Authorize URL. Your integration exchanges this code for a Notion access_token that enables your service to make authenticated requests to the Link Previews APIs.
-Notion authenticates with your service. Your service responds to Notion‚Äôs request with a code. Notion exchanges this token for your service‚Äôs access_token via your OAuth Token URL. This allows Notion to embed the data from your service in Link Previews.
-
-The tokens need to be exchanged the first time a user attempts to add your Link Preview enabled URL to a page. After the initial exchange, the Notion access_token is long-living and doesn‚Äôt need to be updated. If you prefer, Notion can also support refresh tokens and fetch new tokens from your service.
-
-The auth flow begins when a user shares your Link Preview enabled URL in Notion. Notion recognizes the link and redirects to the OAuth Authorize URL that you provided in the integration settings.
-
-Notion includes the following query params to kick off the OAuth flow with your service:
-
-Parameter	Description	Value
-code	A UUID that Notion generates to authenticate with your service.	614846ff-b061-4eac-a511-fc20c3f0838a (example value)
-redirect_uri	A constant string. Your service redirects a user to this URL after they grant permission for it to access Notion.
-
-To prevent attackers from providing arbitrary URIs, your service should validate that the redirect URI matches this value.	https://notion.so/externalIntegrationAuthCallback
-client_id	The OAuth Client ID that you provided when you created the integration.	mRkZGFjM (example value)
-scope (optional)	The OAuth Scopes value that you provided when you created the integration.	unfurl, user_name (example values)
-response_type	A constant string.	code
-state	A randomized string for security validation.	tga@YNV9cfw4yrv0thw (example value)
-
-Your implementation begins after Notion sends the request.
-
-1. Provide OAuth form
-
-Listen for requests to your OAuth Authorize URL. When you detect a request from Notion, present a UI that asks the user to allow the authentication process to continue.
-
-For example, Slack shares the following interstitial when a user initiates a Link Preview from a Slack URL:
-
-An example interstitial from a Slack Link Preview auth flow
-
-2. Authenticate with Notion‚Äôs access_token
-
-In your integration implementation, retrieve the¬†code¬†that Notion sent when it called your OAuth Authorize URL. Then, send the¬†code¬†as part of a POST request to Notion‚Äôs token URL:¬†https://api.notion.com/v1/oauth/token.
-
-üìò
-
-The Notion code is valid for 10 minutes. If the code expires, then an error is returned and you need to reinitiate the auth flow for Notion to authenticate with your service (Step 2a).
-
-To explore other possible errors, refer to the OAuth 2.0 documentation. Default to re-initiating the auth flow to handle errors.
-
-The request is authorized using HTTP Basic Authentication. The credential is a colon-delimited combination of the integration‚Äôs¬†CLIENT_ID and¬†CLIENT_SECRET:¬†CLIENT_ID:CLIENT_SECRET. You can find these values on the integration settings page. Visit¬†notion.so/profile/integrations, find your integration, and click¬†View integration.
-
-You can find your integration's client ID and client secret on the integration settings page
-
-üìò
-
-Note that in¬†HTTP Basic Authentication, credentials are¬†base64¬†encoded before being added to the¬†Authorization¬†header. Notion also requires the word Basic before the base64 encoded string. A complete code param looks something like the following:
-
-Basic NjQ5Mzc0OTIzNzQ5MjM4NDc5MjM4NDc5MjM0NzkyMzc0OjQ3Mzg5Mjc0OTIzODQ3Mjk0ODcyMzkzNDgyNzk0ODcyMzQ5
-
-For more information, read about HTTP Basic Authentication in our Authorization guide.
-
-The body of the request contains the following JSON-encoded fields:
-
-Parameter	Description	Value
-code	A unique random code that Notion generates to authenticate with your service, generated when a user initiates the auth flow.	"ABC" (example value)
-grant_type	A constant string.	authorization_code
-external_account	Object with key and name properties.
-
-key should be a unique identifier for the account. Notion uses the key to determine whether or not the user is re-connecting the same account.
-
-name should be some way for the user to know which account they used to authenticate with your service.	Refer to the example below.
-
-The following example demonstrates an external_account object for team@makenotion.com, a Notion employee account, to authenticate with Slack to use a Slack Link Preview.
-
-JSON
-{
-  "key": "A83823453409384",
-  "name": "Notion - team@makenotion.com"
-}
-
-The account name appears in the "My connections" settings page, where a user can review their authentications for your integration.
-
-An example authenticated Slack connection listed in a user‚Äôs "My connections" settings page.
-
-A complete POST request looks like the below:
-
-cURL
-curl --location --request POST 'https://api.notion.com/v1/oauth/token' \
---header 'Authorization: Basic '"$BASE64_ENCODED_ID_AND_SECRET"'' \
---header 'Content-Type: application/json' \
---header 'Notion-Version: 2022-06-28' \
---data '{
-  "grant_type": "authorization_code",
-  "code": "e202e8c9-0990-40af-855f-ff8f872b1ec6",
-	"external_account": {
-		"key": "A83823453409384",
-		"name": "Notion - team@makenotion.com"
-	}
-}'
-
-Notion responds to the request with a 200 OK and the following response body:
-
-Parameter	Description	Value
-access_token	A unique random string that Notion generates, in exchange for the code. You can use the access_token to make authorized requests to the Notion API.	"ABC" (example value)
-bot_id	A UUID representing this authorization.	"3d592781-2dcc-4d4b-bcf3-776a2a7ad7b8" (example value)
-duplicated_template_id	Always null for Link Preview integrations. Create a standard public integration to use template URLs with the API.	null
-owner	An object indicating who owns the authorized workspace.	Refer to the bot object documentation.
-token_type	A constant string.	"bearer"
-workspace_id	A UUID representing the ID of the Notion workspace where the authorization flow took place.	"3d592781-2dcc-4d4b-bcf3-776a2a7ad7b8" (example value)
-workspace_icon	A URL to an image, or a string of characters, that identifies the workspace. This could be useful if you‚Äôd like to display this authorization in your service‚Äôs UI.	"üç©"
-workspace_name	A string representing a human-readable name that can be used to display this authorization in your service‚Äôs UI.	"My Team Workspace" (example value)
-
-Store the Notion response, and associate it with the user who initiated the OAuth flow. Notion stores the token that you provided.
-
-üìò
-
-For tips on storing access_tokens, check out the auth guide.
-
-3. Redirect to the redirect_uri with code
-
-When a user selects "Allow" to grant Notion the requested permissions, redirect to the redirect_uri , the constant string notion.so/externalIntegrationAuthCallback, with your service‚Äôs unique code and the state that Notion sent to your service when it initiated the auth flow.
-
-When Notion receives the redirect, it sends a POST request to the OAuth Token URL that you provided with the following body:
-
-Parameter	Description	Value
-code	A unique random string that your service generates, retrieved from your service‚Äôs request to the redirect_uri. Notion is sending back the code that you sent.	WQtaEYNV9jfL4yr89KJA0thw
-client_id	The OAuth Client ID that you provided when you created the integration.	mRkZGFjM (example value)
-client_secret	The OAuth Client Secret that you provided when you created the integration.	ZGVmMjMz (example value)
-redirect_uri	A constant string.	notion.so/externalIntegrationAuthCallback
-grant_type	A constant string.	authorization_code
-
-The body is sent in the application/x-www-form-urlencoded format and expects a JSON response.
-
-4. Share the access_token with Notion
-
-From your OAuth Token URL, respond to Notion‚Äôs POST request with an access_token body parameter in your 200 response.
-
-Notion saves the access_token to send in future requests. Notion sends a request to your Unfurl Callback URL every time that the user associated with the token pastes a new Link Preview enabled URL or revisits a page with an existing Link Preview to refresh data.
-
-How Notion handles OAuth errors
-
-Notion handles error responses as described by the¬†OAuth Error Spec. The message that Notion displays to the user varies depending on the information that you provide.
-
-For example, you can respond with an error and a standard error code like access_denied:
-
-https://notion.so/externalintegrationauthcallback?error=access_denied
-
-In this instance, Notion shares the following message:
-
-The message that Notion displays in the UI when it receives an access_denied error code from your service
-
-You can also add an error_description to the response:
-
-https://notion.so/externalintegrationauthcallback?error=access_denied&error_description=The+user+has+denied+your+application+access
-
-If Notion detects a description, then it replaces the standard dialogue prompt with the specified description, as in the below:
-
-If you provide an error_description parameter, then the message in the Notion UI displays it
-
-If Notion doesn‚Äôt recognize the error code, then it notes that the error is unknown:
-
-The message that Notion displays in the UI when it doesn't recognize an error code
-
-üìò
-
-For more details on standard error codes, refer to the OAuth spec.
-
-How to use refresh tokens (optional)
-üìò
-
-Skip to Step 2e if you‚Äôre creating long-living access tokens. This section only applies to temporary access tokens.
-
-Return a refresh_token
-
-Instead of creating a long-living access_token, you can send a refresh_token alongside a temporary access token. Notion can then use the refresh_token to fetch new tokens from your service.
-
-If you return a refresh_token, then you need to also return an expires_in integer, as in the following example:
-
-Example 200 JSON response from your service with refresh_token and expires_in values
-{
-  "access_token": "ABC",
-  "refresh_token": "XYZ",
-  "expires_in": 60000
-}
-
-expires_in represents the number of seconds until the access_token expires.
-
-Notion requests to refresh a token
-
-If Notion detects that the access_token is expired, meaning that the current time exceeds the time of the last refresh plus the expires_in value, then Notion refreshes the tokens when it calls your endpoints.
-
-To refresh the token, Notion sends a POST request to your OAuth Token URL with the following parameters:
-
-Parameter	Description	Value
-refresh_token	The unique random string returned in the response to the previous request.	"ABC" (example value)
-client_id	The OAuth Client ID that you provided when you created the integration.	mRkZGFjM (example value)
-client_secret	The OAuth Client Secret that you provided when you created the integration.	ZGVmMjMz (example value)
-redirect_uri	A constant string.	https://notion.so/externalIntegrationAuthCallback
-grant_type	A constant string.	refresh_token
-Respond to Notion‚Äôs request to refresh a token
-
-From your OAuth Token URL, return an access_token in your 200 response. You can optionally return new refresh_token and expires_in values.
-
-5. Test the auth flow in Notion
-
-To test the auth flow, make sure that you‚Äôve added the integration to a workspace. Then, navigate to "My connections" in the workspace settings. Click "Show all". Find the integration that you created in the list, and select "Connect" to kick off the auth flow.
-
-Guess which icon represents our test integration
-
-üìò
-
-If you don‚Äôt see your integration in the list, then refresh the page. Notion only loads new integrations on page load.
-
-If the auth flow is successful, then you‚Äôll see a new entry under the "My connections" menu.
-
-The new entry that appeared when we connected a much happier test Link Preview integration
-
-To verify that the key for this connection is unique, repeat the auth flow multiple times using the same credentials to validate that you only get a single entry.
-
-üìû¬†Use the Unfurl Callback URL
-1. Configure unfurl attributes
-
-After a user pastes a Link Preview enabled link and completes the auth flow, Notion sends a POST request to the Unfurl Callback URL that you provided in the integration settings.
-
-Notion sends the access_token from your service in a POST to the Unfurl Callback URL that you provide
-
-The request includes a Bearer authorization with the user‚Äôs access_token from your service, and the payload is a single field called uri that includes the link that the user shared:
-
-cURL
-curl -d '{"uri":"http://example.com/file/123"}' \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer <ACCESS_TOKEN>"
-    -X POST https://example.com/unfurl
-
-Set up the Unfurl Callback URL to respond to Notion‚Äôs request with a 200 OK including the uri, and an array of all of the unfurl attributes, the values to display in the Link Preview. The array must include a title attribute that gives the Link Preview a title and a dev attribute that indicates the developer or company that created the Link Preview.
-
-The following is an example response:
-
-JSON
-{
-  "uri": "http://example.com/file/123",
-  "operations": [
-    {
-      "path": [
-        "attributes"
-      ],
-      "set": [
-        {
-          "id": "title",
-          "name": "Title",
-          "type": "inline",
-          "inline": {
-            "title": {
-              "value": "The Link Preview's Title",
-              "section": "title"
-            }
-          }
-        },
-        {
-          "id": "dev",
-          "name": "Developer Name",
-          "type": "inline",
-          "inline": {
-            "plain_text": {
-              "value": "Acme Inc",
-              "section": "secondary"
-            }
-          }
-        },
-        {
-          "id": "color",
-          "name": "Color",
-          "type": "inline",
-          "inline": {
-            "color": {
-              "value": {
-                "r": 235,
-                "g": 64,
-                "b": 52
-              },
-              "section": "background"
-            }
-          }
-        }
-      ]
-    }
-  ]
-}
-
-To preview how different response objects unfurl in a Link Preview, explore the integration's Link Preview Lab.
-
-üìò
-
-To learn more about unfurl attributes, refer to the Link Preview unfurl attributes reference.
-
-2. Handle unfurl request errors
-
-Set up the Unfurl Callback URL to handle errors, as in the following example.
-
-JSON
-{
-  "uri": "http://example.com/file/123",
-    "operations": [
-        {
-          "path": ["error"],
-	        "set": { "status": 404, "message": "Content not found" }
-        }
-}
-
-üîÅ¬†Manage updates to Link Previews
-Update Link Previews to reflect data shared in unfurl attributes
-
-If the unfurl attributes from your service change over time, then you can alert Notion to update the Link Preview to mirror those changes.
-
-When your service detects changes to data that is referenced by a Link Preview, send a PATCH request to Notion‚Äôs /v1/external/object endpoint to update the unfurl attributes.
-
-To update the unfurl attributes displayed in a Link Preview, send a PATCH request to Notion‚Äôs /v1/external/object endpoint using all of the attributes from the original Unfurl Callback URL response
-
-Include all of the same objects from the Unfurl Callback URL response in the request, including the attributes that haven‚Äôt changed, as in the following example:
-
-cURL
-curl -d `{
-  "uri": "http://example.com/file/123",
-    "operations": [
-        {
-          "path": ["attributes"],
-        "set": [
-          {
-            "id": "title",
-            "name": "Title",
-            "type": "inline",
-            "inline": {
-              "title": {
-                "value": "The Link Preview's NEW Title",
-                "section": "title"
-              }
-            }
-          },
-          {
-            "id": "color",
-            "name": "Color",
-            "type": "inline",
-            "inline": {
-              "color": {
-                "value": {
-                  "r": 235,
-                  "g": 64,
-                  "b": 52
-                },
-                "section": "background"
-              }
-            }
-          }
-        ]
-        }
-  ]
-}` \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer <ACCESS_TOKEN>" \
-	  -H "Notion-Version: 2021-08-16" \
-    -X PATCH https://api.notion.com/v1/external/object
-
-It‚Äôs also possible to set a new error request. For example, if the data originally shared in a Link Preview can‚Äôt be found, then you could send an update request as follows:
-
-cURL
-curl -d `{
-  "uri": "http://example.com/file/123",
-    "operations": [
-        {
-          "path": ["error"],
-	        "set": { "status": 404, "message": "Content not found" }
-        }
-  ]
-}` \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer <ACCESS_TOKEN>" \
-	  -H "Notion-Version: 2021-08-16" \
-    -X PATCH https://api.notion.com/v1/external/object
-
-You can also set both new attributes and an error request at the same time, as in the below example:
-
-cURL
-curl -d `{
-  "uri": "http://example.com/file/123",
-    "operations": [
-        {
-          "path": ["attributes"],
-	        "set": [
-	          {
-	            "id": "title",
-	            "name": "Title",
-	            "type": "inline",
-	            "inline": {
-	              "title": {
-	                "value": "The Link Preview's Title",
-	                "section": "title"
-	              }
-	            }
-	          },
-	          {
-	            "id": "color",
-	            "name": "Color",
-	            "type": "inline",
-	            "inline": {
-	              "color": {
-	                "value": {
-	                  "r": 235,
-	                  "g": 64,
-	                  "b": 52
-	                },
-	                "section": "background"
-	              }
-	            }
-	          }
-	        ]
-        },
-        {
-          "path": ["error"],
-	        "set": { "status": 404, "message": "Content not found" }
-        }
-  ]
-}` \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer <ACCESS_TOKEN>" \
-	  -H "Notion-Version: 2021-08-16" \
-    -X PATCH https://api.notion.com/v1/external/object
-
-üìò
-
-When updating a Link Preview‚Äôs unfurl attributes, there‚Äôs no need to clear the error. If no error is sent, then the error is automatically cleared.
-
-Notion updates your service when a user deletes Link Preview enabled URLs
-
-When a user deletes all Link Previews associated with a URL from their workspace, Notion sends a DELETE request to your Unfurl Callback URL.
-
-Notion sends a DELETE request to your /unfurl endpoint.
-
-Listen for the request to perform any associated actions, like deleting the record from your service.
-
-üí´ Submit your integration for security review
-
-Before a Link Preview integration can be publicly distributed, it needs to pass a security review. Fill out this form to submit your integration for review.
-
-üëÄ¬†Next steps
-To learn more about customizing a Link Preview‚Äôs unfurl attributes, refer to the reference docs
-
-Updated 10 months ago
-
-Introduction
-Publishing integrations to Notion‚Äôs Integration Gallery
-Did this page help you?
-Yes
-No          "strikethrough": false,
-            "underline": false,
-            "code": false,
-            "color": "default"
-          },
-          "plain_text": "column 3 content",
-          "href": null
-        }
-      ]
-    ]
-  }
-}
-
-üìò
-
-When creating a table block via the Append block children endpoint, the table must have at least one table_row whose cells array has the same length as the table_width.
-
-Table of contents
-
-Table of contents block objects contain the following information within the table_of_contents property:
-
-Property	Type	Description
-color	string (enum)	The color of the block. Possible values are:
-
-- "blue"
-- "blue_background"
-- "brown"
-- "brown_background"
-- "default"
-- "gray"
-- "gray_background"
-- "green"
-- "green_background"
-- "orange"
-- "orange_background"
-- "yellow"
-- "green"
-- "pink"
-- "pink_background"
-- "purple"
-- "purple_background"
-- "red"
-- "red_background"
-- "yellow_background"
-Example Table of contents block object
-{
-  //...other keys excluded
-	"type": "table_of_contents",
-  "table_of_contents": {
-  	"color": "default"
-  }
-}
-
-Template
-‚ùóÔ∏è
-
-Deprecation Notice
-
-As of March 27, 2023 creation of template blocks will no longer be supported.
-
-Template blocks represent template buttons in the Notion UI.
-
-Template block objects contain the following information within the template property:
-
-Field	Type	Description
-rich_text	array of rich text objects	The rich text displayed in the title of the template.
-children	array of block objects	The nested child blocks, if any, of the template block. These blocks are duplicated when the template block is used in the UI.
-Example Template block object
-{
-  //...other keys excluded
-  "template": {
-    "rich_text": [
-      {
-        "type": "text",
-        "text": {
-          "content": "Add a new to-do",
-          "link": null
-        },
-        "annotations": {
-          //...other keys excluded
-        },
-        "plain_text": "Add a new to-do",
-        "href": null
-      }
-    ]
-  }
-}
-
-To do
-
-To do block objects contain the following information within the to_do property:
-
-Field	Type	Description
-rich_text	array of rich text objects	The rich text displayed in the To do block.
-checked	boolean (optional)	Whether the To do is checked.
-color	string (enum)	The color of the block. Possible values are:
-
-- "blue"
-- "blue_background"
-- "brown"
-- "brown_background"
-- "default"
-- "gray"
-- "gray_background"
-- "green"
-- "green_background"
-- "orange"
-- "orange_background"
-- "yellow"
-- "green"
-- "pink"
-- "pink_background"
-- "purple"
-- "purple_background"
-- "red"
-- "red_background"
-- "yellow_background"
-children	array of block objects	The nested child blocks, if any, of the To do block.
-Example To do block object
-{
-  //...other keys excluded
-  "type": "to_do",
-  "to_do": {
-    "rich_text": [{
-      "type": "text",
-      "text": {
-        "content": "Finish Q3 goals",
-        "link": null
-      }
-    }],
-    "checked": false,
-    "color": "default",
-    "children":[{
-      "type": "paragraph"
-      // ..other keys excluded
-    }]
-  }
-}
-
-Toggle blocks
-
-Toggle block objects contain the following information within the toggle property:
-
-Field	Type	Description
-rich_text	array of rich text objects	The rich text displayed in the Toggle block.
-color	string (enum)	The color of the block. Possible values are:
-
-- "blue"
-- "blue_background"
-- "brown"
-- "brown_background"
-- "default"
-- "gray"
-- "gray_background"
-- "green"
-- "green_background"
-- "orange"
-- "orange_background"
-- "yellow"
-- "green"
-- "pink"
-- "pink_background"
-- "purple"
-- "purple_background"
-- "red"
-- "red_background"
-- "yellow_background"
-children	array of block objects	The nested child blocks, if any, of the Toggle block.
-Toggle Block
-{
-  //...other keys excluded
-  "type": "toggle",
-  "toggle": {
-    "rich_text": [{
-      "type": "text",
-      "text": {
-        "content": "Additional project details",
-        "link": null
-      }
-      //...other keys excluded
-    }],
-    "color": "default",
-    "children":[{
-      "type": "paragraph"
-      // ..other keys excluded
-    }]
-  }
-}
-
-Video
-
-Video block objects contain a file object detailing information about the video.
-
-Example Video block object
-{
-  "type": "video",
-  //...other keys excluded
-  "video": {
-    "type": "external",
-    "external": {
- 	  	"url": "https://companywebsite.com/files/video.mp4"
-    }
-  }
-}
-
-Supported video types
-.amv
-.asf
-.avi
-.f4v
-.flv
-.gifv
-.mkv
-.mov
-.mpg
-.mpeg
-.mpv
-.mp4
-.m4v
-.qt
-.wmv
-YouTube video links that include embed or watch.
-E.g. https://www.youtube.com/watch?v=[id], https://www.youtube.com/embed/[id]
-üìò
-
-Vimeo video links are not currently supported by the video block type. However, they can be embedded in Notion pages using the embed block type. See Embed for more information.>…‘>≤p|>”∑p>Œ/p>äŒ…>6Êç>ì
-v>ú∏>ÊÃ™>áR{>¯’>b$∏>Ä_∫>BËö> GÇ>}£>Nü>+¨>∞<x>XúL>_a≠>Øø>◊˜<>?¿>(…¥>@Œ§>ÊÖ%>h√>ÛJS>ÄF$>hgò>ﬁîø>∏7â>ç√>Ön>ãÀ∆>xò>ö]ä>òæ≠>J~é>≤—Æ>Ï*~>ﬂB@>ı1™>VV>Á‚u>oπ«>ﬂÉB>jE>√∂∆> πü>ìt…>c&D>¥ŸJ>[Æ>€û>HRx>J•»>lÆ>¯æG>/Ïú>ó”…>ªÇM>YAê>G–µ>*Eh>ˆ›…>ﬁﬁ´>hVù>ZÑ≠>ÆP\>H3m>'òü>„¥><ö>‰ÿ®>_ﬂ‹>n8∑>îgŒ>÷Y>uµî>CJî>rªó>¶ÍÃ>Hw¥>Ôíì>>øè>Fé«>“§X> zX>ñA≈>SÀB>f∫J>k[¥>¬T>‰µ>¿(P>¥∞>0Ø∫>{»>bÅ>*≠†>Ë∞√>¿ï>>ñ¯…>ÿ%L>∆f@>⁄«>¶î>£§∂>‰S>ãM>ñÃ…>√ø>€•>+xÆ>œ
-ê>CL√>mé>ˇ¬>]‰Ä>∆E…>»◊¬>¯”ƒ>É2t>x’º>[ü|>,|ä>ò$x>ˆ˝ >^íy>PûR>”¿o>x¿>3Äy>¨Vå>7w>êﬂ∑>ª±>∂“∞>œ≥>d≥>≥rµ>p„x>√MÆ>Ø∞´>€≤¨>.¬Å>Û„Æ>lr§>´'∂>TÛß>ﬁH{>Ísø>#≠∂>›;Å>€Zß>S´¥>„±Ã>Kc∑>¨>ó∂>ûYµ>fÉ>æ›^>∏}>„·≈>} Å>p≈ã>f;À>XQ~>ñEø><äÇ>Æïê>É4z>ŒÃ>Ω¿>◊‘>êmÅ>i>£/}>¶PÃ>^ß¿>c9‘>p⁄É>ì>\>xº>ì¢∆>/>∂>ä∫>Ø∂Ø>3Áº>‹¥ä>0Âº>l‡>∞„±>¨ÔÑ>ÏN«> 4Ω>ÿ»Æ>^èÑ>Fw—>¿¥>O#≠>xØ∞>ä«É>õ”“>gpª>Î›∏> 3æ>&¡>ˆ´Ã>óH´>–êÖ>»∆>2j>{˙Ä>¢ø>Ûé¬>Ê™œ>√çÄ>ïÈì>®ÈÄ>D Ã>v	µ>cà“>+∑>#ç¨>¨Õº>ºBå>¿Ö\>{Ø>Øº>4å>Î+ª>Øl”>ö_π>Úœâ>ﬁN^>Ìæ>W∫>ìª>öÎê>¨\‘>3∑>‡%∑>º∫±> ∫>lÀ>à#ø>ÇÕ>ª¸â>ìn>äØÖ>é¨∑>£`«>ßçµ>\$â><ö>S¯Ö>ê—>p”ª>,KÜ>¨…–>·“á>Á?¡>◊a∏>$|∏><Ÿ•>¥hπ>k•>·Œ>pì>À—>F©I>$Ç<¸üÇ<.<>˚<æù4ºäë<ÏÛxª€ÄŸ;ÄÓ<4‹Üª®tºkÍ=<ÈºÒ
-ë<¥¯º√ù3<oíàº⁄"8=ã`”ª∞Ö<ù—<9úºG∆(º”(oºàº≠–gºã ºƒO´º¸åAª3n©<∂5R<¶Ø-<±ìºª¢ó;˛Fô<BJX=T´M<.}¢ºÄu∫ØÛ7ºéÕë;.¢ºæ!2<ü±zºÙ -º^∂¬ªÎƒÃºëG;w<D‚tºë∆<√†%<i∆†<ñu∂ºc·Ò∏xB∆º≤M∆ªt@Ú<-üΩÆJ
-ΩÜL¸º¨sºã<Üéº Dï;-ßÀ;{rˇ:iLû;Fz<·€yª€‚c=˜ºxö⁄∫0îó<√C‘:Pªºø‹º0w= L@<f◊;x[‰ª©Êùº\ç4<œﬁ%ºà≈úº‰8&=œIÌ<ˆ ;ÈÌe;¢‹§ºqπ=+Sº*?®∫∞ˇ∂∫¿∏™º¨– Ω¥≠ı<õ‡∫“_º3ï<¶Ω„:”Û™:°Ó±<Ô?&<¬úM<‡>ºíU•ªÈíg<˚«º6ƒ‰∫◊®£º10ººt’Ω˘"<5¿«ªå y<ıªO<µ”8=,=Y¬Ω7ø
-<º˙j:3VπΩ⁄<bªª±ñq;ö}CªêÑÎ;Á9/º#ç∂ªÿ·<íãÔª—7ËºﬂŸKºç◊=ñíÂº∆Ú•ºFâÂºMªpº¿∂
->:ı‚:’S∏ª
-ñ∆<2÷B<Zû[Ω&D<`+%=æD;:Ω'µ<± <öÉo;˝t
-=b6Ω‘ÒHºπNrª◊ñÕ<Ω…;=‡∞é;˙É¶<l†§<¨•<R†ê<£Ùº˚ΩHº~Ωº	Yªºy8z∫O!ºu1Ú<°><‹ñ•;EÀ;ºˆ-ºìÑ<y …ºˇÄÄ=.êÙ;5›î;1â‘ªK˘;	éï<®¿£º≤·<≠seº¸`<\b<¯¯Íº¿™*º÷ÅºsëºÈ–(Ω6=_Å<‡=bΩ<Ö'Yº‡û»ªØ–G<ºå<£†”ªìhä;ÏW$;XçÃªâ0Vº˘gs<∏<ŒYñ<hñéº<ëº$Cú<eA/ºÄöHº”#ﬁº∆yºI≈4<6]ªE_<´éÕ<®˚r<©”;ä*<kU[ªà–‘;#ÃªV†:vág<BGÃ:≥‚àª’`’<+º∑w?ºˇk;Òiàºä√º0ˇC=QÛá</ä»º.B
-Ω%“;
-◊é<E’Æ;ﬂJ'ªG.Û;ŒÖ<π$=˜Õ>;Ø2 º?c—ºAú¬ºº:ÇºËÂ<eöºúÌ≈ªƒL<ã¿ßª"oûºaÄjªîø∞<ÿπ<®ïîºíÁg∂õHÛºq»Øºí<Læ< Cª§Ü≤< ∏ã<Æ}í;x9¢ºµ≈Çºı©F<X.‘<‚=E¡Ωz!œºtùº˝xº3c‘º¸"=ºÄü“ºd°/<3r≠ª∫aÍ<"U9º¸Êp<Éa;ëüÒªáÂ–<Fﬂêº√4RºR6îºê⁄€ºJŒºÜ&T;[´<àó¶ºt†©<6:áª{ÒR<|ã<Á?h<$PÔº+äΩ]≈•ºã†◊π√é®º§t/=P´;…ØˇºW‡™;zVûº$Ü9ºŸã®;f˜zªSì<¢,\:ÁØô;˙Ü™:˛dn<ƒ÷ö<®Üñ<9<8±∫˛q∑º|¢|º;π=ﬂ~º∫Ùº‘•ªàíhºxs<
--ó∫ ¿µºÙC<©˘¸;*P=6Qsº™ñ$9ÛD˘º`
-<˚ê ª!ﬂ%=dP ºñ¸)<•‡=ΩÒõ<∆(=ÊDªâ~úΩÍÄ<øMå;ì2;DÜ¯ºÊ´'=)<äª\%~º⁄∞Çª‰(§<∆§Ã<YM<W¡Ω·Û÷;∞?∂ººêº5^…<ò‡≤=òlCºgº]
-jªÿZºE´TºW˜;<‘“ ºi∏n<‰çΩòXŒºtπºz2∫º∞RΩ‡ºEø:+ŒK;É{<yR<ä∏;w¨ºLÑ∫;¡ï2ºQ&≤º©ö#<îôŒ;„∞Ω¯1=Ò!Nºß™å<B8Ìº&k«<ıÓ$ºS=ÿ‹BºEπ<{°Åª©Çñº∑Ínª(B<t6Ö;˜%Ìº?@ 6B2Ωà,ºù< ;-Nù<>;°àƒ;˘π^<›j=•36∫˙Q¬º
-WK<Œ‡ª%Ôq<Ì8(ºz∏<Ç’}º~ï´ºxˇ8ÿrºo)ƒ<öö<·tOºàü=NQ;ZÃx<¢<º‡Ë”;ó))Ω`ã;Yç
-=ÇzÉºŒMZΩ∑qΩ¯ÄªR}ù<9íªÑ}<≥åª~˙;À¶A<U(æπM’º2N=ˆ™u:ôèîªø=ñYÒ;i@‘º›zçºJN=|+<Ö2ªvÈ≠ªîécºÆ¥∫˛Ìºk0 º˘©<ç∆<…O<gauªÛ›Öº∫.	=ƒnûºEx˙:Ãˆ¬;˝¨cº2Ω!å	=;àó<°±º±ÿ<·ãñªP∏ºf˙~<Ôm¥;
-jñ<1SºÓ÷aª˙èÃ<£ùÌºÕÅT<yªﬂºØ&úºÊò¯º9Kº÷Ò·:9Y_;ùÄ<.w=)G=∂©Ùº·Ú;¨j«:{Ö°;B±=0:±7-8D<ô+º
-e·<ç±SºW,è<«;ﬁ∞<âeΩóüºJB≤<ƒY%º¨©Æ:ΩËCÖ;êL>Yvº2–π˘◊<OBG<fø8Ω	?<TÔ%=)j: Ω∂«;bõºEjg:ÛøÜ<¬~ƒº2s,º›ªÑª¬ =IV=!ë<∆¥û<f€h<=≤<¸¥<Æ3*º,9vº◊|Ü;Oú;=®K;’Gº€=ä‹h<TëßªÙ
-Yº=€@ª`Èû:«•·ºeÎp=†¬“;	(≈ºœ‰&ΩÎ;UFÈ<É5_º∆=∂…Œ;¸ü<wä<Hh≈º`ˆaº†<3ºÆx’º‹ºÇtø<%ﬁ;kd=b$∂<Ÿ`<ˇ]ìºre<|@ª<÷_bªÛÔ.<~% <! †9lü:ºn
-º;Tõ<z˛¬;œqºa©¢ºã∞π<Ø~ºï¯tº–ûÅªbkº˝o<BÌ˝ªæâ’πM
-à;Ëê¢<¶≠>πÒ B;”-ª-‹u<*|;å.Fº…àr<õ∏;;ZThªÈÉ˛<dut<ÓÔ1º¥Ï∫7›õº£J¥º')H=Ögë<¥¨Øº4Ωa<°Û;’Ë–<X;i}ˇ9%¸∆ª‘∂Ω<ÇjºxÒºçGqºÓºÛm√ºg ;<Ì6ºÃ=≤;|uU<˜áªR*ºHüºê¢©<27Ã<Êãùº€«º1∂õºF2ºÂÕñ;7'<–Ïª⁄dÄ<%;}1‡ª/Óıº˝ùxºDr/<Ú7=¿9Ï<ˆ&Ωc—Èº˜<¬º»À%ª§Fº¶wÃºﬂ¯<º^óD;-‹ºB∞Î<ÚGAºΩÄÒ;ãz`;–D⁄ªg‡ï∫∑£ªgªñ\∑;2ÓΩC”4Ωjä¨º◊®:Ä∫.ΩŒ`Á;h»¢<ú7@<ñÀ±<îå<T:º3nΩŒíÕº WÃ;é¶aº–πO=ÖæK;¢¸—ºÓ∑¨ª=@àºøâ∞ª<;'<÷t¡ªúw<9∆;ÕÛÃ;)=:Å<$8°:o¸d</À;Z4&º≥˜º∂éíºÍ$@<K=ˇªﬁ€ªR8ª:çÁ∂ºO;‘];g∫éª{ì;Gï“;‚∫U=√jÇ∫Ïõä;òÛ˝ªê4.º4ÄŒ∫Ñ≠]=utöªﬁΩº¨Ó>Ω)+ºﬁˆ&=≥˜Ë<Àˆ•Ω2£Ÿ<
-f}∫ƒÎº^‰ºãı=ÚYc<ò˜⁄;ÆÈ±ºzê©ª≈ <<ø;∞W<¡7SΩkˆ;p`yº√çàºÈ%=Î}Ø=±Y(ªEß∫Ω<Œ$˘ª©´xºæO%∫à( ªC∑·;
-øìºÖ˘Xº^Õª`b;ÆLæºmdº&"6<!;≤y€:≤><Hπ^∫Òæº }ªÿéÿº˝ËºeFfº˚éñ< ¿ΩÇ#=˘9,›G<]4€º.È=¨í9ìY	=¬%Ò∫§	<À€£º;ùºîvdªÛû"<ú®;äãÁºØÊ#º…Ωn`Üº¢)ã<πP<öêŒ<ŸÙÑ<¯SN<øÁ~<æ\=Ï°äº@‹ºãAº;©ø€ª£°P<˜Òêª=ÏD„ªÿ`»º⁄a¬:…Hºÿ´¶<´èB<O›º1 =≈M»;z-<ÈI=<§öø<âº·Äó<&¶x< €â;¸J*ΩÎ|éºÅî¢;<xπ<BKªÊc◊<î )ºî<ı‘û<›·÷ª√@º¯-M=π9<R«aªÈù¸<⁄∂üπäNºÔ-ÛªV“=ÿÑá:áìX;fºÃ§º0üØº⁄
-ΩπªS"{<`{1ªp>E<o∫|º];Nº∫=Òº_la<ªL<m¬´ªÿ°˘º}ı=ñ:‡<Ä≥ ºVH˜<Ìcº˜s¡º˝ ò;¿§;fŒ®<¡©OºÒ/<æŸ’<‰pÊº_`<≠ÊΩœ÷‰ºcﬂº£ ìº√“3<≈Á <<Il∫‰π—<¥__=ú˝º‹Ì:ä';r´;õT˜<9”∫∫XM,<1¡Òªí¢—<òºj!Í<‰\∫iÔ¿<;ΩÏ`ÆºqÃ:ﬁï<Âë<˛&πº2h<≥Ö>5(Éºcæ˛ª‘Vû<ö6<6•0ΩΩ·¨;%A=π',ª[]Œº5ÈäªHÆºkxD:œw<–™4<kQÙªXî~;^wÒ<√e¨;ª~:=„¸$;ZÀ;@"<ßöªHºKHvº –›:Æ®<q¿Ïª¬Rnº+7=Coó;TgèºU~º’Ù;&…îº°ûÙº™èX=\Æ⁄ªÔëΩ6#bΩ*/:Ü
-Ó<Î≈ºé 8=ø¢<≈˜+ºµG+<Å#†ºíâ£ºEºYT®ºU9ïº¿
-ã<ù&®ª‚C=Ùt<†Y<µ©}º$≥ü<¯‘=g.ë;{y;<ÅK<Nzà;{ªª%Ëº«èÓªÑÆº^î: ®º-Kñ<	Cœºõïîº-ÇŒ:î©ºzî<â]á:Rn3ºmÃªÕaû<Ÿ$ ªà\•º4É“;ºwà<-c:Ö¢4º!ZC<5ÿﬁ:‚âS:ØﬁM<}¶<∑ Jº[“áºÃèº
-˛¸ª∆B=å=ç<˘Ï?ººS7Ω,H%ª›6†ª–í9=ız9[◊†º√ßsºÁπü;&ãhº!ò*Ω?]∫ô	;ÈNˆºáQπÎÒ:Ms¿<ïáñ<”gs∫3#>ªBΩ<˛Ø<+Eè<weºuz˘ºkXº¸â5<˙≥;›Ä<' 1ºà?y<rDºî—îº™ﬂΩWKQªÛ∫≠:õÙ<Òwë<ˇ∂vº≈Ω"æºQê~;=ÚZ<cv}ºÖd<Â¥,ºÒW$Ω%Ó‘<¨œDº≤ﬂË;€*”:;JØªTùºJ©y<≥[<®°®<†7Ω¿Ü3ΩFÂ‹º£‘uªÅSΩıΩº•(í<|⁄Î;'7¢<ó	<6⁄<Êª⁄ºE^ºı/<åÉªØ=nﬂ∫?¢ºÅÀVª ©º!ÎπÉÑ<qÔ,ºÔV<Å]∫»…@<¢Wî:ß < <’ºÛ!π;CÂ¥∫& úºEƒΩ¨—º!$;Ï˘ë<IÇG;
- ò;£f≥ºúoºgIà<∫l;¯¯'∫oöÂπÎl=πVÑªÂNƒ:†è<ü°ãºÏÑ;¸Ø=˜x™;π>“ªLÒºˆzèºÑ=ÆÛ=\≥ØΩÖï<<ñ.<låººµÀº¢x=vIü<
-<≈D Ωødõ∫{pFºßQ@º—ù;Ï TΩ∑Ì<∑ÛÖºhRª`…„<+•=(Eª∑¯Ü;jWs<†GÚ∫àÉùºﬁT1º©Â√:˘◊™ºJŒiºÍØgªi∑äªÕ@´<„#Öºâø;‡a<JQs<ÖM7<aT˙;÷ﬁ∂ªŒôÌ;€6gº{%ÁºŸ–Kº{¨¿ª˝Ä∆<π3¬º$<=ÿÇrªrR<«◊∏º©zD=∑Dì9‘/	=VıX<t1ı:¬BõºÊ¶öº;y∑;’Ne;1|øª§ÊºÉ`ºÙΩæ≤‡º§Kç<RË¡:–∂Ò<Í<è¬Ø<îË}<3wM=(nºí†ΩµΩº}*æ:ƒÃÎ;º`Ã<ë'û:Î,êº} Ñ∫P"áº„
-≈ªj:<IâºíN“<‹gë<8 ™:‚}è<ˇ∞˚<rÈ≤ª&Gë<2Ebºµ@a<·]¡ªÉß!<√à#<K«<Q:å»<.Îª…¬æ;⁄<*T%<^l‡ª«—?=’7W<Uì;Õ!=ˇå9ºà†:E\ΩªàV§;	Ñ¥ª≥”Ñ<9^"ºˇ◊ºÒjˇºâ%°º‰ã;Vfµ;¬*ûº“∫ ¯_º~6è;Pâ=Ft¸º∆⁄È<0Ñî<4Ö∫Ò˘˜ºö(º<éq·<möºÛ—&=Ü}<ºow¶:ÄKœª“Â3<¿:è<Î8ºë <@<Ä<!NºÁÁª™ä'Ω&GΩ∑8€º‚uÀª§vq< È„<Æ”ººá
-k<~{=ÙmÏºÑ∆ªFÍ¨∫Tª∂:Ê◊<aîº∫ªÔªË7:ç&ùª  +π‘Sø<û “ªxΩ=ﬂOΩZ?ºäTºRñ0<€Ûà;UÌ:<7<	>ƒC´º^DHºB„¶<?@<Ó˜&ΩØ»≠;U,…<GV∫√ì•ºg@ºh=æºˇáπT+,∑m‚≠<ˆ \;Õ@	<e¡<‡i>ºYÚd=Åº®bÇª/Éf∫IAÔªG#˛º˛›Çº0ºÀsRªò<ìºóâº±≈=ﬂGÈª’,Lº®Èùº8KC<„)ºéK‚º∫¬8=ÔΩéº:—æºS∞Ω%a∫√éb<[/€πõ‰L=‡°|<å∂Õº¯ <≥‹Öº≠ õº‰—ºﬁ…»ªÛzº5ü<óüΩª§v=äâÖ<_zá;ß∏<¢1â<ú˝Â<U»Û;644< 7∂;˚P∏;8˝:ŒƒÄº.«”ºÒEÈº∫`ºA ?º K´<‹r÷º|äº·4º${óºûü<–Û+<'„…ªø#I<EÇ©<≈º”‡Ω£k-<Fπ<≈Ê2ºö‹¸ª“T/<A;?;ﬁ¯G;{õ;°o<<ê/ºEìºêKº_W4<ÜqH=$∞<Æ
-ºâ»
-Ωô≠ºF◊:ñ>C=xPÆ;ˇ‘º∏IÒªA¡Ó;∑ÄºQΩ@ÏÜ∫;~=¸”Õº3Økºdﬁñ<∏HÎ<F~‘<Y˛;yQc:ÿ∏BΩLn<™}ºŒW-º©gøº8<öªÄÌª<»"Ä;é”R<Öˇª'?<r<9º≠	|º«˚Ωk/±ª69kºuøºB›;ﬁÃv<∫∂/ΩÓëÙºﬁª„xÉ<6˚;D0<ä+ºÒà,ΩDø„<rX	ºñ“;D¬94 ª–uº¬∂<zV8<‚.3<NÌºﬂŒΩiP;º¥‚˘∫ñêxº˜ΩÉ…'ºeıª⁄[;h6JºB[∑;·!µº˘g=;‚(Ü<ÂnªÃ¯˘;∆g•ªf◊‰º©U√:. ºØº–:Òo~∫Öºí>P;‚B ºÏ.ÿ;]d∫-˘H<º˙ΩA<"ö:˝‘ºuO'Ω;F◊ºG3é;@‘(=íT≤ª5‘N;êº‚Z`º°=§kµø¸5;€≈ªü˝T=bË7º6G∫;ƒ˚˝<K"ºäÙ:é§;4@#<⁄∑≥;ó=º!'>ºôº=|1Ï;[F¨ΩRëª;Mé<ã_„º¡¨£º⁄D=ÁøŒ<˛…Ãª«¢ΩFºÿª=¬º‚ãªºY< `Ωx§,<“g5º±YI</<<"Éú=‡ªk∏ùªü2*<éBI∫*Ô£º• ôº™§;≠0Ωı»Üº¸#OºvD/ºtél<Ô◊àºö˙≤;ö\‡;Ô’ÿ<Ö#ã<ØA‰∫Œ<ªA¯´<í∫Éº‰E>ºB\Z<»wÜ<bÇÚ<?ÅAºTqÊ<sÂYºèã><¶å≥ºÚ~=Ë$,;‰=ºó<z¸;¡:;èáºÇ∂Œ;ÇÎ6ºI
-∏ºø(Ò;H[hºMˆΩwù¯º6—Ä<˘{–9`Ó¿<°¢Ì<˘…<Ü/Ö<†.=Ì—ªv‰º:ÁíºåŒ	<˝Ï<mÓˇºÌò<vf*ª˛&ºlºuªéO¢º^∑Ωƒyé<g´êº0ΩI<á<É »ªU““∫∞¬∂<6<ô•)∫Êj◊º/îª”—:<§"©;O»(<¨≈<√Äß∫‘÷í<Q“òª¡&ªCÛŒ<W¨<X6.;_ò8=íﬂ\<à∑x<‰;=éèººë7<èºdgº´Lºi‰®<*@Fº∂vÏº◊◊†º±ìªs=∑:ûJO<*?§º•¶!ºYºˇ'‡:∑%	=‰Ωí≠=2 ¥<SÀè;øIﬁºcÑu<9L<}ÈPº‹v4=>bºVã<÷(U;Váí<#Rl<,º•ë€;ÄÈ;aÂˇ; ˝‰ºœπ'ΩüTΩo£·ºî
-P95Ã⁄;
-é=Q9ŒºÂ7<Âct={sΩ¥ôıª£eaª√Ôºzû≥<ü¥ª¶|º!S8<åÓºΩ⁄∞;l<<∏ª∂B1=CêΩSc@ºCösºÃ\º+2«ºJ_…<=€eº÷f>Ã	£ºê^;º∞–ö<’ï;≠(*Ω‘f¬;øC<66Fºc’¿ºÙùÜºÆ§^º…ìˇ:LÛº{∞ß;∏jK<K.∫n˜ã<YÆ&ª43=†ñº’æº‡hªP|z;‡∑/Ω(∂ª;Ω°Æ¸º«∆ºú°º4Ê<Æ
-˘ªyPÓ;vÕ√º4Í∫èbƒ;=á ΩJﬂ0=Q‚WºÀΩ;∫åÍªeC¥;ßÇ∫;Œc;5=˘„:~∂ºÔ1y<πÊáºzÔ¢º∏pñºØf;	ÚºBÁy< z·ªc,=„æà<»¶2ºLnƒ<	‹}<n œ<Tay;Ã’ﬂ:6‡;Y=è;%ƒ';©}º∂áº˚ü’ºÕ·ÑºA›ºsÕK<îñÿºùÚbª˜Ì	Ω•≤Öº£w=ë‡$<Rú—∫¯≠=èè¡<))º-‘2ΩDq ;»Gﬁ<ºªvº:æj;P∫\<lsZ;Üà#;óø<ﬁ˝ªB§{ºA ïº%˘ÂªÁé∞<™˚6=⁄“; ˘Öºâs–º©Ìëº—dÈ:Ap§<Óü;§ÉZºQBú:ˇÅê<\Ó;∫¯ÇºK∫©ºúÆ8=d¸Àª‹hèºÖÉ∫<‰ö<uOæ<˝a@;ı◊ì∫«^
-Ω LO<q™¬º óFª"ºÇ;/∏…®<Y‡<˝qÅ<Pzª(®;<ö’éªÊ‹;Xhºœnüª
