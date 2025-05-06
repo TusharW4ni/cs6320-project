@@ -4,7 +4,6 @@ import {
   createNewPageFn,
   createAssignmentFn,
   updateAssignmentFn,
-  createTaskFn,
 } from "~/server/api/ntn/assignments/ai-functions";
 import {
   ensureAssignmentsDatabase,
@@ -12,10 +11,6 @@ import {
   updateAssignment,
   findAssignmentPageId,
 } from "~/server/api/ntn/assignments/db-service";
-import {
-  ensureTasksDatabase,
-  createTask,
-} from "~/server/api/ntn/assignments/db-service-task";
 
 export default defineEventHandler(async (event) => {
   console.log("Process Text start");
@@ -76,7 +71,6 @@ export default defineEventHandler(async (event) => {
         createNewPageFn,
         createAssignmentFn,
         updateAssignmentFn,
-        createTaskFn,
       ],
     },
   ];
@@ -164,21 +158,6 @@ export default defineEventHandler(async (event) => {
         console.log("updateAssignment succeeded");
       } catch (e: any) {
         console.error("updateAssignment failed:", e);
-      }
-    } else if (call.name === "createTask") {
-      const { title, priority, status } = call.args;
-      const taskData = {
-        title,
-        priority,
-        status: status,
-      };
-      console.log("invoking createTask", taskData);
-      try {
-        const taskdbId = await ensureTasksDatabase(ntnApiKey, parentPageId);
-        await createTask(taskdbId, taskData, ntnApiKey);
-        console.log("createTask succeeded");
-      } catch (e: any) {
-        console.error("createTask failed", e);
       }
     } else {
       console.warn("unknown function call:", call.name);
