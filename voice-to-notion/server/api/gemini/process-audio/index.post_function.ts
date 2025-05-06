@@ -9,10 +9,13 @@ import { GoogleGenAI } from "@google/genai";
 import {
   createNewPageFn,
   createAssignmentFn,
+  updateAssignmentFn,
 } from "~/server/api/ntn/assignments/ai-functions";
 import {
   ensureAssignmentsDatabase,
   addAssignment,
+  updateAssignment,
+  findAssignmentPageId,
 } from "~/server/api/ntn/assignments/db-service";
 
 export default defineEventHandler(async (event) => {
@@ -88,7 +91,13 @@ export default defineEventHandler(async (event) => {
   // Prepare Gemini tools
   const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   const tools = [
-    { functionDeclarations: [createNewPageFn, createAssignmentFn] },
+    {
+      functionDeclarations: [
+        createNewPageFn,
+        createAssignmentFn,
+        updateAssignmentFn,
+      ],
+    },
   ];
   console.log(
     "tools:",
@@ -97,6 +106,10 @@ export default defineEventHandler(async (event) => {
 
   // Call Gemini with audio data
   let result: any;
+  /*const config: any = {
+    tools,
+    toolChoice: "auto",
+  };*/
   try {
     console.log("calling Gemini...");
     result = await ai.models.generateContent({
@@ -135,22 +148,39 @@ export default defineEventHandler(async (event) => {
       }
     } else if (call.name === "createAssignment") {
       const { course, title, dueDate, taskTags } = call.args as any;
-      console.log("invoking createAssignment", {
-        course,
-        title,
-        dueDate,
-        taskTags,
-      });
+
+      const assignmentData = {
+        course: course || "",
+        title: title,
+        dueDate: dueDate || new Date().toISOString().split("T")[0],
+        taskTags: Array.isArray(taskTags) ? taskTags : [],
+      };
+      console.log("invoking createAssignment…", assignmentData);
+      console.log("taskTags before addAssignment:", assignmentData.taskTags);
       try {
         const dbId = await ensureAssignmentsDatabase(ntnApiKey, parentPageId);
-        await addAssignment(
-          dbId,
-          { course, title, dueDate, taskTags },
-          ntnApiKey
-        );
+        await addAssignment(dbId, assignmentData, ntnApiKey);
         console.log("createAssignment succeeded");
       } catch (err: any) {
         console.error("createAssignment failed:", err);
+      }
+    } else if (call.name === "updateAssignment") {
+      const { title, course, dueDate, taskTags, status } = call.args;
+
+      try {
+        const dbId = await ensureAssignmentsDatabase(ntnApiKey, parentPageId);
+        const pageId = await findAssignmentPageId(ntnApiKey, dbId, title);
+
+        await updateAssignment(ntnApiKey, dbId, title, {
+          course,
+          dueDate,
+          taskTags,
+          status,
+        });
+
+        console.log("updateAssignment succeeded");
+      } catch (e: any) {
+        console.error("updateAssignment failed:", e);
       }
     } else {
       console.warn("unknown function call", call.name);
