@@ -206,76 +206,118 @@ export default defineEventHandler(async (event) => {
   // Prepare Gemini tools
   /*const ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
   const tools = [
-    { functionDeclarations: [createNewPageFn, createAssignmentFn] }
+    {
+      functionDeclarations: [
+        createNewPageFn,
+        createAssignmentFn,
+        updateAssignmentFn,
+      ],
+    },
   ];
-  console.log('tools:', tools[0].functionDeclarations.map(f => f.name));
+  console.log(
+    "tools:",
+    tools[0].functionDeclarations.map((f) => f.name)
+  );
 
   // Call Gemini with audio data
   let result: any;
+  /*const config: any = {
+    tools,
+    toolChoice: "auto",
+  };*/
   try {
-    console.log('calling Gemini...');
+    console.log("calling Gemini...");
     result = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: "gemini-2.0-flash",
       contents: [
-        { text: 'Decide which function to call based on this recording:' },
-        { inlineData: { data: audioBase64, mimeType } }
+        { text: "Decide which function to call based on this recording:" },
+        { inlineData: { data: audioBase64, mimeType } },
       ],
-      config: { tools }
+      config: { tools },
     });
-    console.log('raw response:', JSON.stringify(result, null, 2));
+    console.log("raw response:", JSON.stringify(result, null, 2));
   } catch (err: any) {
-    console.error('Gemini error:', err);
+    console.error("Gemini error:", err);
     setResponseStatus(event, 500);
-    return { error: 'Gemini API call failed.', details: err.message };
+    return { error: "Gemini API call failed.", details: err.message };
   }
 
-  console.log('functionCalls:', result.functionCalls);
+  console.log("functionCalls:", result.functionCalls);
 
   // Execute any function calls
   for (const call of result.functionCalls || []) {
     console.log(`call.name=${call.name}`, call.args);
 
-    if (call.name === 'createNewPage') {
-      const title = call.args?.title || 'Untitled Page';
-      const content = call.args?.content || 'No content provided';
-      console.log('invoking createNewPage', { title, content });
+    if (call.name === "createNewPage") {
+      const title = call.args?.title || "Untitled Page";
+      const content = call.args?.content || "No content provided";
+      console.log("invoking createNewPage", { title, content });
       try {
-        await $fetch('/api/ntn/pages/post', {
-          method: 'POST',
-          body: { ntnApiKey, parentPageTitle, title, content }
+        await $fetch("/api/ntn/pages/post", {
+          method: "POST",
+          body: { ntnApiKey, parentPageTitle, title, content },
         });
-        console.log('createNewPage succeeded');
+        console.log("createNewPage succeeded");
       } catch (err: any) {
-        console.error('createNewPage failed:', err);
+        console.error("createNewPage failed:", err);
       }
-
-    } else if (call.name === 'createAssignment') {
+    } else if (call.name === "createAssignment") {
       const { course, title, dueDate, taskTags } = call.args as any;
-      console.log('invoking createAssignment', { course, title, dueDate, taskTags });
+
+      const assignmentData = {
+        course: course || "",
+        title: title,
+        dueDate: dueDate || new Date().toISOString().split("T")[0],
+        taskTags: Array.isArray(taskTags) ? taskTags : [],
+      };
+      console.log("invoking createAssignment…", assignmentData);
+      console.log("taskTags before addAssignment:", assignmentData.taskTags);
       try {
         const dbId = await ensureAssignmentsDatabase(ntnApiKey, parentPageId);
-        await addAssignment(dbId, { course, title, dueDate, taskTags }, ntnApiKey);
-        console.log('createAssignment succeeded');
+        await addAssignment(dbId, assignmentData, ntnApiKey);
+        console.log("createAssignment succeeded");
       } catch (err: any) {
-        console.error('createAssignment failed:', err);
+        console.error("createAssignment failed:", err);
       }
+    } else if (call.name === "updateAssignment") {
+      const { title, course, dueDate, taskTags, status } = call.args;
 
+      try {
+        const dbId = await ensureAssignmentsDatabase(ntnApiKey, parentPageId);
+        const pageId = await findAssignmentPageId(ntnApiKey, dbId, title);
+
+        await updateAssignment(ntnApiKey, dbId, title, {
+          course,
+          dueDate,
+          taskTags,
+          status,
+        });
+
+        console.log("updateAssignment succeeded");
+      } catch (e: any) {
+        console.error("updateAssignment failed:", e);
+      }
     } else {
-      console.warn('unknown function call', call.name);
+      console.warn("unknown function call", call.name);
     }
   }
 
   // Fallback: default to page creation if no calls
   if (!result.functionCalls?.length) {
-    console.log('no function call — default createNewPage');
+    console.log("no function call — default createNewPage");
     try {
-      await $fetch('/api/ntn/pages/post', {
-        method: 'POST',
-        body: { ntnApiKey, parentPageTitle, title: 'Untitled Page', content: 'No content provided' }
+      await $fetch("/api/ntn/pages/post", {
+        method: "POST",
+        body: {
+          ntnApiKey,
+          parentPageTitle,
+          title: "Untitled Page",
+          content: "No content provided",
+        },
       });
-      console.log('default createNewPage succeeded');
+      console.log("default createNewPage succeeded");
     } catch (err: any) {
-      console.error('default createNewPage failed:', err);
+      console.error("default createNewPage failed:", err);
     }
   }*/
 
