@@ -44,7 +44,7 @@ GitHub: [https://github.com/TusharW4ni/cs6320-project/tree/main]
 
 Report: [https://docs.google.com/document/d/1QEw-iZ9I-_KUuEM1yuyjB15yypU5fCoeim_QqdWjpj8/edit?usp=sharing]
 
-YouTube Tutorial: [https://youtu.be/bzyICtHLpZ8]
+YouTube Tutorial: [https://youtu.be/blg9noAxJ8g]
 
 # Contributors
 
